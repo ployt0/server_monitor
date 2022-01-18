@@ -6,10 +6,10 @@ This repo helps to monitor a remote server by first checking its ping.
 It then attempts to SSH in and run further tests. The results are recorded
 in the "results" subdirectory for each month and node type.
 
-Currently there are 2 node types: miner and ordinary node. Ordinary node
-assumes it will be serving http and records the return code and latency.
+Currently, there are 2 node types: miner and ordinary node. The Ordinary
+node type attempts HTTP requests and records the return code and latency.
 This may be an assumption too far. Miner node prefers instead to query
-`nvidia-smi` collecting power use, memory use, and temperatures.
+`nvidia-smi` collecting: power use, memory use, and temperatures.
 
 HTTP endpoint checks can be disabled by inheriting and overriding.
 [`ChecksInterface`](checks_interface.py) is the lowest denominator and 
@@ -21,13 +21,13 @@ It simply pings are records latency on the control node.
 
 ## Installation
 
-Install requirements in a venv on the control machine.
+Install [requirements.txt](requirements.txt) in a venv on the control machine.
 
 Create a working, source, directory; eg, `mkdir ~/monitoring` on the 
 controlling machine.
 
 Copy or clone the python files, especially [server_mon.py](server_mon.py)
-and your (outside of source control) `monitored_nodes.json`. Set up systemd unit
+and your (outside of source control) `monitored_nodes.json`. Set up systemd
 service and timer files. The timer file specifies the interval and is named
 identically to the service but with the ".timer" suffix replacing ".service".
 For example:
@@ -48,10 +48,10 @@ WantedBy=timers.target
 ```
 
 After changing the interval (3 minutes is good for testing), do 
-`systemctl daemon-reload`, after a pause this returns.
+`systemctl daemon-reload`. After a pause this returns.
 Any parsing errors will appear in `systemctl status rmt-monitor.timer`.
-We can check the schedule with `systemctl list-timers`. It won't be scheduled 
-*whilst* it is still running, it gets its next time slot after the matching
+We can check the schedule with `systemctl list-timers`. Timers aren't scheduled 
+*whilst* still running. Timers get their next time slot after the matching
 service finishes.
 
 The unit file (lookout, password needed storing somewhere!):
@@ -69,28 +69,26 @@ ExecStart=/home/ployt0/monitoring/venv/bin/python /home/ployt0/monitoring/server
 WantedBy=default.target
 ```
 
-Don't be lulled into placing these in the user home subdirectory like
+Don't start as I began by placing these in the user home subdirectory, like
 `~/.config/systemd/user/rmt-monitor.service`.  Doing so causes the timer to stop
 when the user logs out. It may resume upon re-login but that leaves gaps.
 Instead, use `/etc/systemd/system/rmt-monitor.service`. `/etc/systemd/system/`
 is described as, "System units created by the administrator", here:
 <https://www.freedesktop.org/software/systemd/man/systemd.unit.html>.
 
-`User=ployt0` underneath the `[Service]` section enables that user to retain
-ownership of the files and content residing in their home path.
-
-I chose to use the user home subdirectory initially, because people raved 
-about it. <https://askubuntu.com/a/859583> describes how "lingering" my user
-could have prevented this. A year older, <https://askubuntu.com/a/676022>
+<https://askubuntu.com/a/859583> describes how "lingering" my user
+could have prevented service interruption. A year older, <https://askubuntu.com/a/676022>
 states the opposite, which is what I did, after a brief flirtation with the
 *new* ideas.
 
-Beginning in the home directory was one way for my user to retain file
-ownership, even after copying to `/etc/systemd/system`. Systemd still works 
-with them.
+`User=ployt0` underneath the `[Service]` section enables that user to retain
+ownership of the files and content residing in their home path.
 
-In addition to running `systemctl daemon-reload` whenever advised in a
-command's output, I can debug services (and timers) using:
+Use `sudo` to copy files to `/etc/systemd/system` so as to preserve
+unprivileged ownership. Systemd is fine with this.
+
+In addition to running `systemctl daemon-reload` whenever advised in the output
+of another `systemctl` command, I can debug services (and timers) using:
 
 ```shell
 $ systemctl start rmt-monitor
@@ -102,7 +100,7 @@ The one about `journalctl` is my favourite but all three help make the case for
 preferring systemd to cron.
 
 Now to add another unit file, let's say, "monitor-mailer.service", calling the
-same [server_mon.py](server_mon.py) but emailing the metrics, for the day:
+same [server_mon.py](server_mon.py) but emailing the metrics, for the month:
 
 ```
 ExecStart=/home/ployt0/monitoring/venv/bin/python /home/ployt0/monitoring/server_mon.py email_agent_addy@gmail.com email_agent_password -etoyoutome@gmail.com
