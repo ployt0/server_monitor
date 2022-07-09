@@ -88,7 +88,9 @@ class SSHInterrogator:
             local_add_port = find_cells_under(ss_lines, "Local Address:Port")
             # Checking the local address may provide more security.
             ports = set([x.split(":")[-1].strip() for x in local_add_port])
-            self.ports = "+".join([x for x in ports if x not in known_ports])
+            unknown_ports = filter(lambda x: x not in known_ports, ports)
+            sorted_ports = map(str, sorted(map(int, unknown_ports)))
+            self.ports = "+".join(sorted_ports)
         except Exception as e:
             self.err_handler.append(e)
 

@@ -30,7 +30,19 @@ def format_ipv4(ipv4: str):
 def send_email(msg: EmailMessage, email_addy: str, password: str):
     """
     EmailMessage will already contain particular fields, such as "subject".
-    This function just uses and account to actually send it.
+    This function just uses an account to actually send it.
+    """
+    """
+    To help keep your account secure, from **May 30, 2022**, Google no longer
+    supports the use of third-party apps or devices which ask you to sign in
+    to your Google Account using only your username and password.
+    
+    Solution:
+        - Enable MFA
+        - Crete "App password" per app (this app)
+        - Use that password in place of your general password, I guess this
+            provides accountability as to who (or what password) logged in
+            as you.
     """
     # Use this account to send email to another:
     msg["From"] = email_addy
