@@ -5,7 +5,8 @@ import paramiko
 from paramiko import SSHClient
 from paramiko.ssh_exception import AuthenticationException
 
-from generalised_functions import ErrorHandler, PUBLIC_IP, find_cells_under
+from generalised_functions import ErrorHandler, PUBLIC_IP, find_cells_under, \
+    convert_python_date_to_human
 
 
 class SSHInterrogator:
@@ -46,8 +47,11 @@ class SSHInterrogator:
         else:
             raise AuthenticationException("No credentials were accepted by the remote host: {}".format(ip_address))
 
-    def remote_tentative_calls(self, rmt_pc):
-        """All of this should be wrapped in a try catch for when paramiko/network throws a curve ball."""
+    def remote_tentative_calls(self, rmt_pc: Dict[str, Union[List[dict], str]]):
+        """
+        All of this should be wrapped in a try catch for when paramiko/network
+        throws a googly.
+        """
         self.query_free()
         self.query_boot_time()
         self.query_disk_free()
@@ -56,11 +60,9 @@ class SSHInterrogator:
         self.query_ssh_peers(ssh_peers)
         self.query_ports(self.parse_user_csv(rmt_pc.get("known_ports", "")))
 
-    def parse_user_csv(self, user_csv: str) -> Set[str]:
-        if "," in user_csv:
-            users_set = set(user_csv.split(","))
-        else:
-            users_set = {user_csv}
+    @staticmethod
+    def parse_user_csv(user_csv: str) -> Set[str]:
+        users_set = set(user_csv.split(","))
         return users_set
 
     def query_disk_free(self):
@@ -73,8 +75,14 @@ class SSHInterrogator:
     def query_boot_time(self):
         try:
             stdin, stdout, stderr = self.client.exec_command("who -b")
+            # The result is numeric when run locally, but on some servers
+            # it will begin with the month as 3 letters, which by convention
+            # I will use convert_python_date_to_human to standardise to.
             uptime_line = stdout.readlines()[0].strip()
-            self.last_boot = uptime_line[len("system boot"):].strip()
+            up_since = uptime_line[len("system boot"):].strip()
+            if "0" <= up_since[0] <= "9":
+                up_since = convert_python_date_to_human(up_since)
+            self.last_boot = up_since
         except Exception as e:
             self.err_handler.append(e)
 
@@ -129,7 +137,8 @@ class MinerInterrogator(SSHInterrogator):
         self.g_tmp: List[Optional[str]] = [None] * gpu_cnt  # in 'C
 
     def do_queries(self, rmt_pc: Dict[str, Union[List[dict], str]]):
-        # With paramiko/SSH, expect the unexpected, then recover and report the error.
+        # With paramiko/SSH, expect the unexpected, then recover and report
+        # the error.
         try:
             self.initialise_connection(rmt_pc["ip"], rmt_pc["creds"])
             self.query_gpus()

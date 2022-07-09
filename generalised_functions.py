@@ -83,6 +83,16 @@ def plural(quantity, extension="s"):
     return extension if count != 1 else ""
 
 
+def convert_python_date_to_human(yyyy_mm_dd_time):
+    cur_year = str(datetime.utcnow().year)
+    if yyyy_mm_dd_time.startswith(cur_year):
+        fstring = "%b %-d %H:%M"
+    else:
+        fstring = "%b %-d %Y"
+    return "{} {:>2} {}".format(*datetime.strptime(
+        yyyy_mm_dd_time, "%Y-%m-%d %H:%M").strftime(fstring).split(" "))
+
+
 def find_cells_under(table_lines: List[str], col_header: str) -> List[str]:
     """
     Intended for ss lines. Assumes cell will be populated in each row

@@ -14,7 +14,7 @@ SENTINEL_ERROR = RuntimeError("test injected")
 @patch("server_mon.ErrorHandler", autospec=True)
 def test_parse_user_csv(mock_error_handler):
     interrogator = SSHInterrogator(mock_error_handler)
-    assert interrogator.parse_user_csv("forty,five") == {"forty","five"}
+    assert interrogator.parse_user_csv("forty,five") == {"forty", "five"}
     assert interrogator.parse_user_csv("fortyfive") == {"fortyfive"}
     assert interrogator.parse_user_csv("") == {""}
 
@@ -155,7 +155,7 @@ def test_query_ssh_peers_fail(mock_error_handler, sport22_lines):
 def test_query_boot_time(mock_error_handler):
     interrogator = mk_interrogator(mock_error_handler, ["         system boot  2021-10-01 08:55", ""])
     interrogator.query_boot_time()
-    assert interrogator.last_boot == "2021-10-01 08:55"
+    assert interrogator.last_boot == "Oct  1 2021"  # "2021-10-01 08:55"
     interrogator.client.exec_command.assert_called_once_with("who -b")
     mock_error_handler.append.assert_not_called()
 

@@ -7,9 +7,12 @@ from unittest.mock import Mock, patch, call, sentinel, mock_open
 
 import pytest
 
-from generalised_functions import find_cells_under, format_ipv4, plural, send_email, \
-    compose_email, parse_args_for_monitoring, ChecksInterface, email_wout_further_checks, load_results, RESULTS_DIR, \
-    ErrorHandler, MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, IInterrogator, iterate_rmt_servers
+from generalised_functions import find_cells_under, format_ipv4, plural, \
+    send_email, \
+    compose_email, parse_args_for_monitoring, ChecksInterface, \
+    email_wout_further_checks, load_results, RESULTS_DIR, \
+    ErrorHandler, MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
+    IInterrogator, iterate_rmt_servers, convert_python_date_to_human
 
 
 def test_easy_find_cells_under(ss_lines_1):
@@ -44,6 +47,17 @@ def test_plural():
     assert plural(1, "eses") == ""
     assert plural([4], "eses") == ""
     assert plural([1, 2, 34], "eses") == "eses"
+
+
+@patch("generalised_functions.datetime", spec=datetime)
+def test_convert_python_date_to_human(mock_datetime):
+    mock_datetime.utcnow = Mock(
+        return_value=datetime.datetime(2022, 1, 13, 13, 30, 00))
+    mock_datetime.strptime = datetime.datetime.strptime
+    assert convert_python_date_to_human("2022-07-06 21:31") == "Jul  6 21:31"
+    assert convert_python_date_to_human("2021-07-06 21:31") == "Jul  6 2021"
+    assert convert_python_date_to_human("2022-07-26 21:31") == "Jul 26 21:31"
+    assert convert_python_date_to_human("2021-07-26 21:31") == "Jul 26 2021"
 
 
 @patch("generalised_functions.smtplib.SMTP", spec=smtplib.SMTP)
