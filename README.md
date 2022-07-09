@@ -69,7 +69,7 @@ ExecStart=/home/ployt0/monitoring/venv/bin/python /home/ployt0/monitoring/server
 WantedBy=default.target
 ```
 
-Don't start as I began by placing these in the user home subdirectory, like
+Don't start as I began, by placing these in the user home subdirectory, like
 `~/.config/systemd/user/rmt-monitor.service`.  Doing so causes the timer to stop
 when the user logs out. It may resume upon re-login but that leaves gaps.
 Instead, use `/etc/systemd/system/rmt-monitor.service`. `/etc/systemd/system/`
@@ -141,3 +141,16 @@ The following are optional:
 
 - `known_ports` is a comma separated list of ports we have accepted being open
   and so can be ignored by future reports.
+
+
+### Tests
+
+Google stopped allowing simple log in with username and password in May 2022.
+This caused the script to proceed (succeed) without sending any emails.
+
+The `send_email` function threw `SMTPAuthenticationError` but had no way to
+report this other than local logs.
+
+Unittests did not pick this up since gmail is the one external dependency,
+I guess other mail providers exist and they may follow suit. For that reason,
+just be aware or use integration testing.
