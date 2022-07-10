@@ -43,7 +43,7 @@ class RangeFinder:
 
     Negative values are not supported.
     """
-    expression = re.compile(r'^([0-9]*.?[0-9]+)(Ti|T|TB|Gi|G|GB|Mi|M|MB|Ki|K|KB)?$')
+    expression = re.compile(r'^([0-9]*\.?[0-9]+)(Ti|T|TB|Gi|G|GB|Mi|M|MB|Ki|K|KB)?$')
     powers = "KMGT"
 
     @staticmethod
@@ -176,13 +176,14 @@ class RangeFinder:
         return stats
 
 
-def tabulate_csv_as_html(csv_header: str, msg: EmailMessage, results: List[ChecksInterface], row_splits: int = 1):
+def tabulate_csv_as_html(csv_header: str, results: List[ChecksInterface],
+                         row_splits: int = 1) -> str:
     """
     :param csv_header: for the table header
-    :param msg: to populate
     :param results: to tabulate
-    :param row_splits: 1 gets the whole row on each line, 2 splits in half, 3 into thirds, etc
-    :return:
+    :param row_splits: 1 gets the whole row on each line, 2 splits in half,
+        3 into thirds, etc
+    :return: html content string
     """
     table = [row.to_csv().split(",") for row in results]
     invariant_cols = find_invariant_cols(table)
@@ -203,7 +204,7 @@ def tabulate_csv_as_html(csv_header: str, msg: EmailMessage, results: List[Check
     content += display_constants(csv_header.split(","), invariant_cols)
     numeric_cols = {k: v for k, v in numeric_cols.items() if k not in invariant_cols.keys()}
     content += display_statistics(csv_header.split(","), numeric_cols)
-    msg.set_content(content, subtype='html')
+    return content
 
 
 def get_row(row: List[str], cells_per_row: int, cell_tag: str):

@@ -201,9 +201,9 @@ def compose_email(
     """
     Composes an email about node Check Statuses.
 
-    :param csv_header:
     :param results: list to put in email
     :param recipient: who to send to
+    :param csv_header:
     :param server_description: adding this info to the subject, is the server
         a general node or specialist, like gpu?
     :param description: typically at/on/for time_str
@@ -213,7 +213,17 @@ def compose_email(
     msg["To"] = recipient
     msg["Subject"] = "{} {} status{}{}".format(
         len(results), server_description, plural(results, "es"), description)
-    tabulate_csv_as_html(csv_header, msg, results)
+    ip_index = csv_header.split(",").index("ipv4")
+    # unlike a simple set, this maintains order since python 3.7:
+    distinct_ips = list(dict.fromkeys(
+        row.to_csv().split(",")[ip_index] for row in results))
+    results_by_ip = []
+    for ip in distinct_ips:
+        results_by_ip.append([row for row in results if row.to_csv().split(",")[ip_index] == ip])
+    content = []
+    for results_for_ip in results_by_ip:
+        content.append(tabulate_csv_as_html(csv_header, results_for_ip))
+    msg.set_content("\n<hr/>\n".join(content), subtype='html')
     return msg
 
 

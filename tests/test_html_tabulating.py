@@ -26,8 +26,9 @@ def test_tabulate_csv_as_html():
         Mock(to_csv=Mock(return_value="10,2,10,4")),
         Mock(to_csv=Mock(return_value="10,4,0,4"))
     ]
-    tabulate_csv_as_html(header, msg, results)
-    assert msg.get_content() == """<table>
+    content = ""
+    content = tabulate_csv_as_html(header, results)
+    assert content == """<table>
 <tr>
 <th>orcs</th><th>trolls</th><th>goblins</th>
 </tr>
@@ -74,6 +75,8 @@ def test_tabulate_csv_as_html():
 </ul></li>
 </ul>
 """
+    assert msg.get_content_type() == "text/plain"
+    msg.set_content(content, subtype='html')
     assert msg.get_content_type() == "text/html"
 
 
@@ -115,6 +118,13 @@ def test_is_considered_rangeable():
     assert not RangeFinder.is_considered_rangeable("1.3Megs")
     assert not RangeFinder.is_considered_rangeable("Megs")
     assert not RangeFinder.is_considered_rangeable("13.13.13.13")
+    # The next five were from an unescaped dot causing a non trailing non-digit
+    # to slip through.
+    assert not RangeFinder.is_considered_rangeable("80+443")
+    assert not RangeFinder.is_considered_rangeable("80-443")
+    assert not RangeFinder.is_considered_rangeable("a1")
+    assert not RangeFinder.is_considered_rangeable("a4")
+    assert not RangeFinder.is_considered_rangeable("z4")
 
 
 def test_get_scaled():

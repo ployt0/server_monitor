@@ -154,3 +154,27 @@ report this other than local logs.
 Unittests did not pick this up since gmail is the one external dependency,
 I guess other mail providers exist and they may follow suit. For that reason,
 just be aware or use integration testing.
+
+With coverage, it is important to order the parameters correctly, first `run`
+as it identifies the subcommand, then `--omit="tests/*"`. `-m pytest -v tests`
+must be last since all arguments after `pytest` get passed to pytest instead.
+
+```shell
+source venv/bin/activate
+coverage run --omit="tests/*" -m pytest && coverage report -m
+```
+
+This is already in this GitHub workflow.
+
+Still the tests do not prove functionality as complete and correct. For example,
+up until July 9th 2022, an email would contain a single summary irrespective of
+how many nodes were being monitored. Nodes are distinct and now have independent
+summaries.
+
+
+### TODO
+
+I am forever resetting my private email and IP address in generalised functions.
+Ideally we would inspect the json configuration and overwrite default values
+with any we find there.
+

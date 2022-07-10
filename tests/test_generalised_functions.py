@@ -75,15 +75,55 @@ def test_send_email(patched_smtp):
     mock_smtp.send_message.assert_called_once()
 
 
+@patch("generalised_functions.EmailMessage.set_content",
+       spec=EmailMessage.set_content)
 @patch("generalised_functions.plural", return_value="eze")
-@patch("generalised_functions.tabulate_csv_as_html")
-def test_compose_email(patched_tabulate_csv_as_html, patched_plural):
-    results = [sentinel.result1, sentinel.result2, sentinel.result3]
-    msg = compose_email(results, "dear@sir.com", sentinel.header, "ewok", "")
+@patch("generalised_functions.tabulate_csv_as_html",
+       return_value="sentinel.content")
+def test_compose_email_unique_ips(patched_tabulate_csv_as_html, patched_plural,
+                                  patched_email_set_content):
+    results = ["sentinel.result1", "sentinel.result2", "sentinel.result3"]
+    check_results = [Mock(ChecksInterface, to_csv=(lambda y: lambda: y)(x)) for
+                     x in results]
+    msg = compose_email(check_results, "dear@sir.com", "ipv4", "ewok", "")
     assert msg["To"] == "dear@sir.com"
     assert msg["Subject"] == "3 ewok statuseze"
-    patched_plural.assert_called_once_with(results, "es")
-    patched_tabulate_csv_as_html.assert_called_once_with(sentinel.header, msg, results)
+    patched_email_set_content.assert_called_once_with(
+        "sentinel.content\n<hr/>\nsentinel.content\n<hr/>\nsentinel.content",
+        subtype='html')
+    patched_plural.assert_called_once_with(check_results, "es")
+    patched_tabulate_csv_as_html.assert_has_calls([
+        call("ipv4", [check_results[0]]),
+        call("ipv4", [check_results[1]]),
+        call("ipv4", [check_results[2]])], any_order=False)
+
+
+@patch("generalised_functions.EmailMessage.set_content",
+       spec=EmailMessage.set_content)
+@patch("generalised_functions.plural", return_value="eze")
+@patch("generalised_functions.tabulate_csv_as_html",
+       return_value="sentinel.content")
+def test_compose_email(patched_tabulate_csv_as_html, patched_plural,
+                       patched_email_set_content):
+    check_results = [Mock(ChecksInterface, to_csv=(lambda y: lambda: y)(x))
+                     for x in
+                     [
+                         "1,metric1.1",
+                         "1,metric1.2",
+                         "1,metric1.3",
+                         "2,metric1.1"
+                     ]]
+    msg = compose_email(
+        check_results, "dear@sir.com", "ipv4,metric1", "ewok", "")
+    assert msg["To"] == "dear@sir.com"
+    assert msg["Subject"] == "4 ewok statuseze"
+    patched_email_set_content.assert_called_once_with(
+        "sentinel.content\n<hr/>\nsentinel.content", subtype='html')
+    patched_plural.assert_called_once_with(check_results, "es")
+    patched_tabulate_csv_as_html.assert_has_calls([
+        call("ipv4,metric1",
+             [check_results[0], check_results[1], check_results[2]]),
+        call("ipv4,metric1", [check_results[3]])])
 
 
 def test_parse_args_for_monitoring_help():
