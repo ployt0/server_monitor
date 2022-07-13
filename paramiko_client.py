@@ -5,8 +5,9 @@ import paramiko
 from paramiko import SSHClient
 from paramiko.ssh_exception import AuthenticationException
 
-from generalised_functions import ErrorHandler, PUBLIC_IP, find_cells_under, \
+from generalised_functions import ErrorHandler, find_cells_under, \
     convert_python_date_to_human
+import generalised_functions
 
 
 class SSHInterrogator:
@@ -56,7 +57,7 @@ class SSHInterrogator:
         self.query_boot_time()
         self.query_disk_free()
         ssh_peers = self.parse_user_csv(rmt_pc.get("ssh_peers", ""))
-        ssh_peers.add(PUBLIC_IP)
+        ssh_peers.add(generalised_functions.PUBLIC_IP)
         self.query_ssh_peers(ssh_peers)
         self.query_ports(self.parse_user_csv(rmt_pc.get("known_ports", "")))
 

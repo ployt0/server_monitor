@@ -15,8 +15,8 @@ from typing import List, Dict, Optional, Any, Callable
 from checks_interface import ChecksInterface
 from html_tabulating import tabulate_csv_as_html
 
-MONITOR_EMAIL = "insert_email_here"
-PUBLIC_IP = "where we run from"
+_MONITOR_EMAIL = "insert_email_here.Can_be_read_from_json_config."
+PUBLIC_IP = "where we test from. Can be read from json config."
 RESULTS_DIR = "results"
 DATE_MON_FMT = "%y%m"
 DAY_TIME_FMT = "%d %H:%M:%S"
@@ -123,7 +123,7 @@ class ErrorHandler:
     def __init__(self):
         self.errors: Dict[str, List[Exception]] = {}
         self.msg = EmailMessage()
-        self.msg["To"] = MONITOR_EMAIL
+        self.msg["To"] = _MONITOR_EMAIL
         # Frame of reference for assigned stack traces:
         self.current_ip: Optional[str] = None
         self.first_error: Optional[Exception] = None
@@ -248,17 +248,23 @@ commands over SSH.
 Servers file is a list of servers with these fields:
 
 {
-    "ip": "21.151.211.10",
-    "creds": [
+  "servers": [
+    {
+      "ip": "21.151.211.10",
+      "creds": [
         {
-            "username": "megamind",
-            "password": "fumbledpass",
-            "key_filename": "/home/megs/.ssh/id_rsa"
+          "username": "megamind",
+          "password": "fumbledpass",
+          "key_filename": "/home/megs/.ssh/id_rsa"
         }
-    ],
-    "http_target": "optional path component of URL to request.",
-    "ssh_peers": "known or permitted ssh clients, separated by commas.",
-    "known_ports": "known or permitted listening ports, separated by commas."
+      ],
+      "http_target": "optional path component of URL to request.",
+      "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
+      "known_ports": "known or permitted listening ports, separated by commas."
+    }
+  ],
+  "this_ip": "ip address of testing machine, to exclude from peers list.",
+  "email_dest": "email address to send notifications to."
 }
 """)
     parser.add_argument(
@@ -346,7 +352,7 @@ def process_args(
     result_holder.save(check_result.get_unit_name())
     if args.send_on_success:
         msg = compose_email(
-            result_holder.results, MONITOR_EMAIL, check_result.get_header(),
+            result_holder.results, _MONITOR_EMAIL, check_result.get_header(),
             check_result.get_unit_name(), "")
         send_email(msg, args.email_addy, args.password)
 
@@ -371,8 +377,11 @@ def iterate_rmt_servers(
     """
     # Open nodes files from outside source control (don't commit credentials):
     with open(nodes_file_name, encoding="utf8") as f:
-        inventory = json.load(f)
-    for rmt_pc in inventory:
+        config = json.load(f)
+    global _MONITOR_EMAIL, PUBLIC_IP
+    _MONITOR_EMAIL = config.get("email_dest", _MONITOR_EMAIL)
+    PUBLIC_IP = config.get("this_ip", PUBLIC_IP)
+    for rmt_pc in config["servers"]:
         ipv4 = rmt_pc["ip"]
         latencies = get_ping_latencies(err_handler, ipv4)
         if len(latencies) == 0:

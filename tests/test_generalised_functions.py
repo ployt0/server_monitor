@@ -11,7 +11,7 @@ from generalised_functions import find_cells_under, format_ipv4, plural, \
     send_email, \
     compose_email, parse_args_for_monitoring, ChecksInterface, \
     email_wout_further_checks, load_results, RESULTS_DIR, \
-    ErrorHandler, MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
+    ErrorHandler, _MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
     IInterrogator, iterate_rmt_servers, convert_python_date_to_human
 
 
@@ -187,7 +187,7 @@ def test_load_results():
 
 def test_error_handler():
     error_handler = ErrorHandler()
-    assert error_handler.msg["To"] == MONITOR_EMAIL
+    assert error_handler.msg["To"] == _MONITOR_EMAIL
 
 
 def test_error_handler_append():
@@ -319,7 +319,7 @@ def test_process_args_then_send(
         mock_interrog,
         mock_result_holder.return_value)
     mock_compose_email.assert_called_once_with(
-        sentinel.results, MONITOR_EMAIL, sentinel.header, sentinel.unit, "")
+        sentinel.results, _MONITOR_EMAIL, sentinel.header, sentinel.unit, "")
     mock_send_email.assert_called_once_with(sentinel.msg, sentinel.email_addy, sentinel.password)
 
 
@@ -361,13 +361,17 @@ def test_iterate_rmt_servers_good_pings(
         mock_err_handler, mock_interrog):
     iterable_latencies = ["21.43", "24.21", "27.87"]
     mock_get_pings.return_value = iterable_latencies
-    mock_rmt_pc = [{
-        "ip": sentinel.ip
-    }]
+    mock_rmt_pc = {
+        "servers": [{
+            "ip": sentinel.ip
+        }],
+        "this_ip": sentinel.source_ip,
+        "email_dest": sentinel.monitoring_email
+    }
     mock_json_load.return_value = mock_rmt_pc
     iterate_rmt_servers(sentinel.file_name, mock_ci, mock_err_handler, mock_interrog, mock_result_holder)
     mock_interrog.assert_called_once_with(
-        mock_err_handler, mock_rmt_pc[0], mock_result_holder, sentinel.ip, iterable_latencies)
+        mock_err_handler, mock_rmt_pc["servers"][0], mock_result_holder, sentinel.ip, iterable_latencies)
     mock_get_pings.assert_called_once_with(
         mock_err_handler, sentinel.ip
     )

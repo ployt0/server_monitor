@@ -108,7 +108,8 @@ ExecStart=/home/ployt0/monitoring/venv/bin/python /home/ployt0/monitoring/server
 
 ### JSON Nodes file
 
-The nodes/inventory file is a list of machines described in json as:
+The nodes/inventory json file contains a list of machines identified by
+"servers", each potentially having:
 
 ```json
 {
@@ -121,7 +122,7 @@ The nodes/inventory file is a list of machines described in json as:
       }
     ],
     "http_target": "optional path component of URL to request.",
-    "ssh_peers": "known or permitted ssh clients, separated by commas.",
+    "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
     "known_ports": "known or permitted listening ports, separated by commas."
 }
 ```
@@ -142,6 +143,15 @@ The following are optional:
 - `known_ports` is a comma separated list of ports we have accepted being open
   and so can be ignored by future reports.
 
+The full structure of the json nodes file (eg monitored_nodes.json) is then:
+
+```json
+{
+  "servers": [],
+  "this_ip": "ip address of testing machine, to exclude from peers list.",
+  "email_dest": "email address to send notifications to."
+}
+```
 
 ### Tests
 
@@ -151,30 +161,6 @@ This caused the script to proceed (succeed) without sending any emails.
 The `send_email` function threw `SMTPAuthenticationError` but had no way to
 report this other than local logs.
 
-Unittests did not pick this up since gmail is the one external dependency,
-I guess other mail providers exist and they may follow suit. For that reason,
-just be aware or use integration testing.
+For that reason integration testing is advisable.
 
-With coverage, it is important to order the parameters correctly, first `run`
-as it identifies the subcommand, then `--omit="tests/*"`. `-m pytest -v tests`
-must be last since all arguments after `pytest` get passed to pytest instead.
-
-```shell
-source venv/bin/activate
-coverage run --omit="tests/*" -m pytest && coverage report -m
-```
-
-This is already in this GitHub workflow.
-
-Still the tests do not prove functionality as complete and correct. For example,
-up until July 9th 2022, an email would contain a single summary irrespective of
-how many nodes were being monitored. Nodes are distinct and now have independent
-summaries.
-
-
-### TODO
-
-I am forever resetting my private email and IP address in generalised functions.
-Ideally we would inspect the json configuration and overwrite default values
-with any we find there.
 
