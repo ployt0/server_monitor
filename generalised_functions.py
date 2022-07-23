@@ -27,7 +27,7 @@ def format_ipv4(ipv4: str):
     return ".".join(["{:>3}".format(x) for x in ipv4.split(".")])
 
 
-def send_email(msg: EmailMessage, email_addy: str, password: str):
+def send_email(msg: EmailMessage, email_from_addy: str, password: str):
     """
     EmailMessage will already contain particular fields, such as "subject".
     This function just uses an account to actually send it.
@@ -45,9 +45,9 @@ def send_email(msg: EmailMessage, email_addy: str, password: str):
             as you.
     """
     # Use this account to send email to another:
-    msg["From"] = email_addy
+    msg["From"] = email_from_addy
     # Attempt to make this work for other than gmail:
-    smtp_server = "smtp." + email_addy.split("@")[-1]
+    smtp_server = "smtp." + email_from_addy.split("@")[-1]
     # 587 is the default TLS port we want to use:
     smtp = smtplib.SMTP(smtp_server, 587)
     try:
@@ -343,8 +343,7 @@ def process_args(
             args.email_to, args.email_addy, args.password, check_result)
         return
     result_holder = ResultHolder()
-    err_handler = ErrorHandler()
-    iterate_rmt_servers(args.nodes_file, check_result, err_handler,
+    err_handler = iterate_rmt_servers(args.nodes_file, check_result,
                         interrog_routine, result_holder)
     if err_handler.errors:
         err_handler.email_traces(args.email_addy, args.password,
@@ -359,8 +358,8 @@ def process_args(
 
 def iterate_rmt_servers(
         nodes_file_name: str, check_result: ChecksInterface,
-        err_handler: ErrorHandler, interrog_routine: IInterrogator,
-        result_holder: ResultHolder):
+        interrog_routine: IInterrogator, result_holder: ResultHolder)\
+        -> ErrorHandler:
     """
     Opens the server list file and iterates through connecting to and querying
     all servers.
@@ -380,6 +379,7 @@ def iterate_rmt_servers(
         config = json.load(f)
     global _MONITOR_EMAIL, PUBLIC_IP
     _MONITOR_EMAIL = config.get("email_dest", _MONITOR_EMAIL)
+    err_handler = ErrorHandler()
     PUBLIC_IP = config.get("this_ip", PUBLIC_IP)
     for rmt_pc in config["servers"]:
         ipv4 = rmt_pc["ip"]
@@ -391,6 +391,7 @@ def iterate_rmt_servers(
         else:
             interrog_routine(
                 err_handler, rmt_pc, result_holder, ipv4, latencies)
+    return err_handler
 
 
 def get_ping_latencies(err_handler, ipv4: str) -> List[str]:

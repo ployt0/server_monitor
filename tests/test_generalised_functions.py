@@ -283,7 +283,6 @@ def test_process_args(
     mock_iterate_rmt_servers.assert_called_once_with(
         sentinel.nodes_file,
         mock_ci,
-        mock_err_handler.return_value,
         mock_interrog,
         mock_result_holder.return_value)
 
@@ -315,7 +314,6 @@ def test_process_args_then_send(
     mock_iterate_rmt_servers.assert_called_once_with(
         sentinel.nodes_file,
         mock_ci,
-        mock_err_handler.return_value,
         mock_interrog,
         mock_result_holder.return_value)
     mock_compose_email.assert_called_once_with(
@@ -369,11 +367,13 @@ def test_iterate_rmt_servers_good_pings(
         "email_dest": sentinel.monitoring_email
     }
     mock_json_load.return_value = mock_rmt_pc
-    iterate_rmt_servers(sentinel.file_name, mock_ci, mock_err_handler, mock_interrog, mock_result_holder)
+    new_mock_err_h = iterate_rmt_servers(
+        sentinel.file_name, mock_ci, mock_interrog, mock_result_holder)
+    assert new_mock_err_h == mock_err_handler.return_value
     mock_interrog.assert_called_once_with(
-        mock_err_handler, mock_rmt_pc["servers"][0], mock_result_holder, sentinel.ip, iterable_latencies)
+        new_mock_err_h, mock_rmt_pc["servers"][0], mock_result_holder, sentinel.ip, iterable_latencies)
     mock_get_pings.assert_called_once_with(
-        mock_err_handler, sentinel.ip
+        new_mock_err_h, sentinel.ip
     )
     mocked_open.assert_called_once_with(
         sentinel.file_name, encoding="utf8"

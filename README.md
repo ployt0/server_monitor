@@ -22,6 +22,13 @@ It simply pings are records latency on the control node.
 ## Installation
 
 Install [requirements.txt](requirements.txt) in a venv on the control machine.
+None of the versions are pinned and I recently discovered that my new server
+was no longer reachable by paramiko, despite ansible and regular SSH having
+no problems. The fix was to update the package in my venv:
+
+```shell
+pip install --upgrade paramiko
+```
 
 Create a working, source, directory; eg, `mkdir ~/monitoring` on the 
 controlling machine.
