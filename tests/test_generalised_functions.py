@@ -348,15 +348,14 @@ def test_process_args_and_email(mock_iterate_rmt_servers, mock_result_holder, mo
 
 
 @patch("generalised_functions.IInterrogator", autospec=True)
-@patch("generalised_functions.ErrorHandler", autospec=True)
 @patch("generalised_functions.ResultHolder", autospec=True)
 @patch("generalised_functions.ChecksInterface")
 @patch("builtins.open", autospec=True)
 @patch("generalised_functions.get_ping_latencies", autospec=True)
 @patch("generalised_functions.json.load", autospec=True)
 def test_iterate_rmt_servers_good_pings(
-        mock_json_load, mock_get_pings, mocked_open, mock_ci, mock_result_holder,
-        mock_err_handler, mock_interrog):
+        mock_json_load, mock_get_pings, mocked_open, mock_ci,
+        mock_result_holder, mock_interrog):
     iterable_latencies = ["21.43", "24.21", "27.87"]
     mock_get_pings.return_value = iterable_latencies
     mock_rmt_pc = {
@@ -364,17 +363,14 @@ def test_iterate_rmt_servers_good_pings(
             "ip": sentinel.ip
         }],
         "this_ip": sentinel.source_ip,
-        "email_dest": sentinel.monitoring_email
+        "email_dest": "stringified_sentinel.monitoring_email"
     }
     mock_json_load.return_value = mock_rmt_pc
-    new_mock_err_h = iterate_rmt_servers(
+    err_handler = iterate_rmt_servers(
         sentinel.file_name, mock_ci, mock_interrog, mock_result_holder)
-    assert new_mock_err_h == mock_err_handler.return_value
+    assert err_handler.msg["To"] == mock_rmt_pc["email_dest"]
     mock_interrog.assert_called_once_with(
-        new_mock_err_h, mock_rmt_pc["servers"][0], mock_result_holder, sentinel.ip, iterable_latencies)
-    mock_get_pings.assert_called_once_with(
-        new_mock_err_h, sentinel.ip
-    )
-    mocked_open.assert_called_once_with(
-        sentinel.file_name, encoding="utf8"
-    )
+        err_handler, mock_rmt_pc["servers"][0],
+        mock_result_holder, sentinel.ip, iterable_latencies)
+    mock_get_pings.assert_called_once_with(err_handler, sentinel.ip)
+    mocked_open.assert_called_once_with(sentinel.file_name, encoding="utf8")
