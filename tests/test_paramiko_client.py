@@ -1,4 +1,5 @@
 from typing import List
+import pytest
 from unittest.mock import patch, Mock, sentinel, call
 
 from paramiko.channel import ChannelFile
@@ -115,6 +116,23 @@ def test_initialise_connection_failover(mock_autoaddpolicy, mock_ssh_client, moc
             **mock_rmt_pc_2["creds"][1]
         )
     ])
+    mock_ssh_client.assert_called_once_with()
+
+
+@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.SSHClient", autospec=True)
+@patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
+def test_initialise_connection_fail(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_1):
+    interrogator = SSHInterrogator(mock_error_handler)
+    mock_ssh_object = mock_ssh_client.return_value
+    mock_ssh_object.connect.side_effect=AuthenticationException
+    with pytest.raises(AuthenticationException) as e_info:
+        interrogator.initialise_connection(mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
+    mock_ssh_object.load_system_host_keys.assert_called_once_with()
+    mock_ssh_object.set_missing_host_key_policy.assert_called_once_with(mock_autoaddpolicy.return_value)
+    mock_ssh_object.connect.assert_called_once_with(
+        mock_rmt_pc_1["ip"],
+        **mock_rmt_pc_1["creds"][0])
     mock_ssh_client.assert_called_once_with()
 
 
