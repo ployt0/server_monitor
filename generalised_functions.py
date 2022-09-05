@@ -10,7 +10,7 @@ import subprocess
 import traceback
 from email.message import EmailMessage
 from pathlib import Path
-from typing import List, Dict, Optional, Any, Callable
+from typing import List, Dict, Optional, Any, Callable, Union
 
 from checks_interface import ChecksInterface
 from html_tabulating import tabulate_csv_as_html
@@ -121,7 +121,7 @@ class ErrorHandler:
     IP address.
     """
     def __init__(self):
-        self.errors: Dict[str, List[Exception]] = {}
+        self.errors: Dict[str, List[Union[Exception, str]]] = {}
         self.msg = EmailMessage()
         self.msg["To"] = _MONITOR_EMAIL
         # Frame of reference for assigned stack traces:
@@ -129,7 +129,7 @@ class ErrorHandler:
         self.first_error: Optional[Exception] = None
         self.first_ip: Optional[str] = None
 
-    def append(self, error: Exception):
+    def append(self, error: Union[Exception, str]):
         if self.first_error is None:
             self.first_error = error
             self.first_ip = self.current_ip
@@ -164,9 +164,12 @@ class ErrorHandler:
         for ip in self.errors.keys():
             message += "================\n{}\n".format(ip)
             for error in self.errors[ip]:
-                message += ''.join(traceback.format_exception(
-                    type(error), value=error, tb=error.__traceback__))
-                message += '\n\n'
+                if isinstance(error, Exception):
+                    message += ''.join(traceback.format_exception(
+                        type(error), value=error, tb=error.__traceback__))
+                    message += '\n\n'
+                else:
+                    message += f"{error}\n\n"
             message += "================\n\n"
         self.msg.set_content(message)
 

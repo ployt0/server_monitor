@@ -3,7 +3,7 @@ from typing import Dict, Set, Tuple, List, Optional, Union
 
 import paramiko
 from paramiko import SSHClient
-from paramiko.ssh_exception import AuthenticationException
+from paramiko.ssh_exception import AuthenticationException, BadHostKeyException
 
 from generalised_functions import ErrorHandler, find_cells_under, \
     convert_python_date_to_human
@@ -23,18 +23,22 @@ class SSHInterrogator:
     def do_queries(self, rmt_pc: Dict[str, Union[List[dict], str]]):
         # With paramiko/SSH, expect the unexpected, then recover and report the error.
         try:
-            self.initialise_connection(rmt_pc["ip"], rmt_pc["creds"])
-            self.remote_tentative_calls(rmt_pc)
+            con_err_str = self.initialise_connection(rmt_pc["ip"], rmt_pc["creds"])
+            if con_err_str:
+                self.err_handler.append(con_err_str)
+            else:
+                self.remote_tentative_calls(rmt_pc)
         except Exception as e:
             self.err_handler.append(e)
 
-    def initialise_connection(self, ip_address: str, credentials: List[Dict[str,str]]) -> None:
+    def initialise_connection(self, ip_address: str, credentials: List[Dict[str,str]]) -> str:
         """
         All of this should be wrapped in a try catch for when paramiko/network throws a curve ball.
 
         :param ip_address: to SSH to.
         :param credentials: a list of identities defined by username and either path to a private key
             or password. These are the same as used by SSHClient.connect.
+        :return: error string, if "expected" error occurred.
         """
         self.client = SSHClient()
         self.client.load_system_host_keys()
@@ -43,10 +47,13 @@ class SSHInterrogator:
             try:
                 self.client.connect(ip_address, **creds)
                 break
+            except BadHostKeyException as bhk:
+                if f"'{ip_address}' does not match" in str(bhk):
+                    return str(bhk)
             except AuthenticationException:
                 pass
         else:
-            raise AuthenticationException("No credentials were accepted by the remote host: {}".format(ip_address))
+            return "No credentials were accepted by the remote host: {}".format(ip_address)
 
     def remote_tentative_calls(self, rmt_pc: Dict[str, Union[List[dict], str]]):
         """
@@ -141,9 +148,12 @@ class MinerInterrogator(SSHInterrogator):
         # With paramiko/SSH, expect the unexpected, then recover and report
         # the error.
         try:
-            self.initialise_connection(rmt_pc["ip"], rmt_pc["creds"])
-            self.query_gpus()
-            self.remote_tentative_calls(rmt_pc)
+            con_err_str = self.initialise_connection(rmt_pc["ip"], rmt_pc["creds"])
+            if con_err_str:
+                self.err_handler.append(con_err_str)
+            else:
+                self.query_gpus()
+                self.remote_tentative_calls(rmt_pc)
         except Exception as e:
             self.err_handler.append(e)
 
