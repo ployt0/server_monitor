@@ -1,11 +1,13 @@
 from typing import List
 from unittest.mock import patch, Mock, sentinel, call
 
+import pytest
 from paramiko.channel import ChannelFile
 from paramiko.client import SSHClient
 from paramiko.pkey import PKey
 from paramiko.ssh_exception import AuthenticationException, BadHostKeyException
 
+import generalised_functions
 from paramiko_client import SSHInterrogator, MinerInterrogator
 
 SENTINEL_ERROR = RuntimeError("test injected")
@@ -238,6 +240,27 @@ def test_query_disk_free_fail(mock_error_handler):
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)
 
 
+def test_remote_tentative_calls():
+    fake_instance = Mock(SSHInterrogator)
+    mock_rmt_pc = {
+        "ssh_peers": "NOO.YOO.GET.LOS",
+        "known_ports": "100,220,441",
+    }
+    fake_instance.parse_user_csv.side_effect = SSHInterrogator.parse_user_csv
+    SSHInterrogator.remote_tentative_calls(fake_instance, mock_rmt_pc)
+    fake_instance.query_free.assert_called_once_with()
+    fake_instance.query_boot_time.assert_called_once_with()
+    fake_instance.query_disk_free.assert_called_once_with()
+    fake_instance.parse_user_csv.assert_has_calls([
+        call(mock_rmt_pc.get("ssh_peers", "")),
+        call(mock_rmt_pc.get("known_ports", "")),
+    ])
+    fake_instance.query_ssh_peers.assert_called_once_with(
+        {generalised_functions.PUBLIC_IP, "NOO.YOO.GET.LOS"})
+    fake_instance.query_ports.assert_called_once_with(
+        SSHInterrogator.parse_user_csv(mock_rmt_pc["known_ports"]))
+
+
 def test_read_gpu():
     gpu = MinerInterrogator.read_gpu(
         '|   0  GeForce GTX 166...  Off  | 00000000:01:00.0  On |                  N/A |\n')
@@ -290,3 +313,5 @@ def test_miner_do_queries_fail(mock_initialise_connection, mock_error_handler, m
     mock_initialise_connection.assert_called_once_with(
         mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)
+
+
