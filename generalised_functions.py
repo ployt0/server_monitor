@@ -151,12 +151,6 @@ class ErrorHandler:
             subject += "==Error setting subject, {}==".format(e)
         self.msg["Subject"] = subject
 
-    @staticmethod
-    def get_last_line_no(tb: traceback) -> int:
-        while tb.tb_next:
-            tb = tb.tb_next
-        return tb.tb_lineno
-
     def email_traces(self, email_addy: str, password: str, unit_name: str):
         """Sends all error information held."""
         self.set_subject(unit_name)

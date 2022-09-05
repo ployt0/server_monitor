@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import smtplib
+import traceback
 from email.message import EmailMessage
 from typing import List
 from unittest.mock import Mock, patch, call, sentinel, mock_open
@@ -131,32 +132,23 @@ def test_parse_args_for_monitoring_help():
         parse_args_for_monitoring(["-h"], "sentinel.monitored")
 
 
-MOCK_ARGS_LIST = ["sentinel.email_addy", "sentinel.email_password"]
-MOCK_UNIT_NAME = "sentinel.monitored"
-
-
-EXPECTED_MOCK_ARGS_OUT = dict(
-    email_addy="sentinel.email_addy",
-    email_to=None,
-    nodes_file="monitored_sentinel.monitoreds.json",
-    password="sentinel.email_password",
-    send_on_success=False
-)
-
-
-def test_parse_args_for_monitoring_typical_use():
-    args = parse_args_for_monitoring(MOCK_ARGS_LIST, MOCK_UNIT_NAME)
-    assert args == argparse.Namespace(**EXPECTED_MOCK_ARGS_OUT)
-
-
-def test_parse_args_for_monitoring_to_get_emailed():
-    args = parse_args_for_monitoring(MOCK_ARGS_LIST + ["-esentinel.recipient_email_addy"], MOCK_UNIT_NAME)
-    assert args == argparse.Namespace(**{**EXPECTED_MOCK_ARGS_OUT, **{"email_to": "sentinel.recipient_email_addy"}})
-
-
-def test_parse_args_for_monitoring_custom_nodes_file():
-    args = parse_args_for_monitoring(MOCK_ARGS_LIST + ["-nsentinel.nodes_file"], MOCK_UNIT_NAME)
-    assert args == argparse.Namespace(**{**EXPECTED_MOCK_ARGS_OUT, **{"nodes_file": "sentinel.nodes_file"}})
+@pytest.mark.parametrize("extra_args, extra_expected_ns", [
+    ([], {}),
+    (["-esentinel.recipient_email_addy"], {"email_to": "sentinel.recipient_email_addy"}),
+    (["-nsentinel.nodes_file"], {"nodes_file": "sentinel.nodes_file"}),
+])
+def test_parse_args_for_monitoring(extra_args, extra_expected_ns):
+    MOCK_ARGS_LIST = ["sentinel.email_addy", "sentinel.email_password"]
+    MOCK_UNIT_NAME = "sentinel.monitored"
+    EXPECTED_MOCK_ARGS_OUT = dict(
+        email_addy="sentinel.email_addy",
+        email_to=None,
+        nodes_file="monitored_sentinel.monitoreds.json",
+        password="sentinel.email_password",
+        send_on_success=False
+    )
+    args = parse_args_for_monitoring(MOCK_ARGS_LIST + extra_args, MOCK_UNIT_NAME)
+    assert args == argparse.Namespace(**{**EXPECTED_MOCK_ARGS_OUT, **extra_expected_ns})
 
 
 @patch("generalised_functions.datetime", spec=datetime)
@@ -374,3 +366,4 @@ def test_iterate_rmt_servers_good_pings(
         mock_result_holder, sentinel.ip, iterable_latencies)
     mock_get_pings.assert_called_once_with(err_handler, sentinel.ip)
     mocked_open.assert_called_once_with(sentinel.file_name, encoding="utf8")
+

@@ -1,6 +1,8 @@
 from email.message import EmailMessage
 from unittest.mock import Mock
 
+import pytest
+
 from html_tabulating import find_invariant_cols, tabulate_csv_as_html, get_row, display_constants, \
     RangeFinder, display_statistics
 
@@ -127,42 +129,48 @@ def test_is_considered_rangeable():
     assert not RangeFinder.is_considered_rangeable("z4")
 
 
-def test_get_scaled():
-    assert RangeFinder.get_scaled("1", "Ki") == 2**10
-    assert RangeFinder.get_scaled("10", "Ki") == 10 * 2**10
-    assert RangeFinder.get_scaled("1.5", "Ki") == 1.5 * 2**10
-    assert RangeFinder.get_scaled("1.5", "KB") == 1.5 * 2**10
-    assert RangeFinder.get_scaled("1.5", "K") == 1.5 * 2**10
-    assert RangeFinder.get_scaled("1", "Mi") == 2**20
-    assert RangeFinder.get_scaled("10", "Mi") == 10 * 2**20
-    assert RangeFinder.get_scaled("1.5", "Mi") == 1.5 * 2**20
-    assert RangeFinder.get_scaled("1", "Gi") == 2**30
-    assert RangeFinder.get_scaled("10", "Gi") == 10 * 2**30
-    assert RangeFinder.get_scaled("1.5", "Gi") == 1.5 * 2**30
-    assert RangeFinder.get_scaled("1", "Ti") == 2**40
-    assert RangeFinder.get_scaled("10", "Ti") == 10 * 2**40
-    assert RangeFinder.get_scaled("1.5", "Ti") == 1.5 * 2**40
+@pytest.mark.parametrize("num, unit, number", [
+    ("1", "Ki", 2 ** 10),
+    ("10", "Ki", 10 * 2 ** 10),
+    ("1.5", "Ki", 1.5 * 2 ** 10),
+    ("1.5", "KB", 1.5 * 2 ** 10),
+    ("1.5", "K", 1.5 * 2 ** 10),
+    ("1", "Mi", 2 ** 20),
+    ("10", "Mi", 10 * 2 ** 20),
+    ("1.5", "Mi", 1.5 * 2 ** 20),
+    ("1", "Gi", 2 ** 30),
+    ("10", "Gi", 10 * 2 ** 30),
+    ("1.5", "Gi", 1.5 * 2 ** 30),
+    ("1", "Ti", 2 ** 40),
+    ("10", "Ti", 10 * 2 ** 40),
+    ("1.5", "Ti", 1.5 * 2 ** 40),
+])
+def test_get_scaled(num, unit, number):
+    assert RangeFinder.get_scaled(num, unit) == number
 
 
-def test_to_numeric_list():
-    assert RangeFinder.to_numeric_list("1.3Ki") == [1.3 * 2**10]
-    assert RangeFinder.to_numeric_list("1.3Mi") == [1.3 * 2**20]
-    assert RangeFinder.to_numeric_list("1.3Gi") == [1.3 * 2**30]
-    assert RangeFinder.to_numeric_list("1.3Ti") == [1.3 * 2**40]
-    assert RangeFinder.to_numeric_list("1.3K") == [1.3 * 2**10]
-    assert RangeFinder.to_numeric_list("1.3M") == [1.3 * 2**20]
-    assert RangeFinder.to_numeric_list("1.3G") == [1.3 * 2**30]
-    assert RangeFinder.to_numeric_list("1.3T") == [1.3 * 2**40]
-    assert RangeFinder.to_numeric_list("1.3GB") == [1.3 * 2**30]
-    assert RangeFinder.to_numeric_list("1.3") == [1.3]
-    assert RangeFinder.to_numeric_list("13") == [13]
-    assert RangeFinder.to_numeric_list(".13") == [0.13]
-    assert RangeFinder.to_numeric_list("13.13") == [13.13]
-    assert RangeFinder.to_numeric_list("48_64") == [48, 64]
-    assert RangeFinder.to_numeric_list("64_12") == [64, 12]
-    assert RangeFinder.to_numeric_list("None") == [None]
-    assert RangeFinder.to_numeric_list("None_None") == [None, None]
-    assert RangeFinder.to_numeric_list("48_None") == [48, None]
+@pytest.mark.parametrize("IEC3SF, numeric_list", [
+    ("1.3Ki", [1.3 * 2 ** 10]),
+    ("1.3Mi", [1.3 * 2 ** 20]),
+    ("1.3Gi", [1.3 * 2 ** 30]),
+    ("1.3Ti", [1.3 * 2 ** 40]),
+    ("1.3K", [1.3 * 2 ** 10]),
+    ("1.3M", [1.3 * 2 ** 20]),
+    ("1.3G", [1.3 * 2 ** 30]),
+    ("1.3T", [1.3 * 2 ** 40]),
+    ("1.3GB", [1.3 * 2 ** 30]),
+    ("1.3", [1.3]),
+    ("13", [13]),
+    (".13", [0.13]),
+    ("13.13", [13.13]),
+    ("48_64", [48, 64]),
+    ("64_12", [64, 12]),
+    ("None", [None]),
+    ("None_None", [None, None]),
+    ("48_None", [48, None]),
+])
+def test_to_numeric_list(IEC3SF, numeric_list):
+    assert RangeFinder.to_numeric_list(IEC3SF) == numeric_list
 
 
 def test_find_ranged_cols():
@@ -201,42 +209,42 @@ def test_superfluous_unzip():
     assert three_tuple == ((22, 44, 66),)
 
 
-def test_summarise_numbers():
-    test_data = [31, 31, 30, None, 31]
-    smry_dict = RangeFinder.summarise_numbers(test_data)
-    assert smry_dict == {
+@pytest.mark.parametrize("data, expected_smry", [
+    ([31, 31, 30, None, 31], {
         "nulls": "1",
         "stdev": "0.5",
         "mean": "30.75",
         "min": "30",
         "max": "31",
-    }
-
-
-def test_summarise_numbers_grande():
-    test_data = [31000000, 31000000, 30000000, None, 31000000]
-    smry_dict = RangeFinder.summarise_numbers(test_data)
-    assert smry_dict == {
+    }),
+    ([31000000, 31000000, 30000000, None, 31000000], {
         "mean": "29Mi",
         "stdev": "488Ki",
         "min": "29Mi",
         "max": "30Mi",
         "nulls": "1"
-    }
+    }),
+])
+def test_summarise_numbers(data, expected_smry):
+    smry_dict = RangeFinder.summarise_numbers(data)
+    assert smry_dict == expected_smry
 
 
-def test_shrink_dps():
-    assert RangeFinder.shrink_dps("31000000") == "30Mi"
-    assert RangeFinder.shrink_dps("999") == "999"
-    assert RangeFinder.shrink_dps("1000") == "1Ki"
-    assert RangeFinder.shrink_dps("1023") == "1Ki"
-    assert RangeFinder.shrink_dps("1024") == "1Ki"
-    assert RangeFinder.shrink_dps("1134") == "1.1Ki"
-    assert RangeFinder.shrink_dps(str(1024*1024)) == "1Mi"
-    assert RangeFinder.shrink_dps(str(999*1024)) == "999Ki"
-    assert RangeFinder.shrink_dps(str(1000*1024)) == "1Mi"
-    assert RangeFinder.shrink_dps(str(1024*1024*1024)) == "1Gi"
-    assert RangeFinder.shrink_dps(str(1024*1024*1024*1024)) == "1Ti"
+@pytest.mark.parametrize("num_str, IEC3SF", [
+    ("31000000", "30Mi"),
+    ("999", "999"),
+    ("1000", "1Ki"),
+    ("1023", "1Ki"),
+    ("1024", "1Ki"),
+    ("1134", "1.1Ki"),
+    (str(1024 * 1024), "1Mi"),
+    (str(999 * 1024), "999Ki"),
+    (str(1000 * 1024), "1Mi"),
+    (str(1024 * 1024 * 1024), "1Gi"),
+    (str(1024 * 1024 * 1024 * 1024), "1Ti"),
+])
+def test_shrink_dps(num_str, IEC3SF):
+    assert RangeFinder.shrink_dps(num_str) == IEC3SF
 
 
 def test_display_statistics_simple():
