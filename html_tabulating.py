@@ -152,27 +152,31 @@ class RangeFinder:
     @staticmethod
     def summarise_numbers(column_values: List[Scalar]) -> Optional[Dict]:
         """Do stat analysis on the numbers then trim the irrelevant."""
-        stats = {
-            "mean": str(round(mean([x for x in column_values if x is not None]), 2)),
-            "stdev": str(round(stdev([x for x in column_values if x is not None]), 2)),
-            "min": str(round(min([x for x in column_values if x is not None]), 2)),
-            "max": str(round(max([x for x in column_values if x is not None]), 2)),
-            "nulls": str(len([x for x in column_values if x is None])),
-        }
-        stats["min"] = RangeFinder.shrink_dps(stats["min"])
-        stats["mean"] = RangeFinder.shrink_dps(stats["mean"])
-        stats["max"] = RangeFinder.shrink_dps(stats["max"])
-        stats["stdev"] = RangeFinder.shrink_dps(stats["stdev"])
-        # Next deal with edge cases where we have one or zero measurements.
+        # Deal with edge cases where we have one or zero measurements.
         val_count = len([x for x in column_values if x is not None])
         if val_count == 0:
             return None
+        if val_count == 1:
+            stats = {
+                "mean": str(
+                    round([x for x in column_values if x is not None][0], 2)),
+                "nulls": str(len([x for x in column_values if x is None])),
+            }
+            stats["mean"] = RangeFinder.shrink_dps(stats["mean"])
+        else:
+            stats = {
+                "mean": str(round(mean([x for x in column_values if x is not None]), 2)),
+                "stdev": str(round(stdev([x for x in column_values if x is not None]), 2)),
+                "min": str(round(min([x for x in column_values if x is not None]), 2)),
+                "max": str(round(max([x for x in column_values if x is not None]), 2)),
+                "nulls": str(len([x for x in column_values if x is None])),
+            }
+            stats["min"] = RangeFinder.shrink_dps(stats["min"])
+            stats["mean"] = RangeFinder.shrink_dps(stats["mean"])
+            stats["max"] = RangeFinder.shrink_dps(stats["max"])
+            stats["stdev"] = RangeFinder.shrink_dps(stats["stdev"])
         if stats["nulls"] == "0":
             del stats["nulls"]
-        if val_count == 1:
-            del stats["stdev"]
-            del stats["min"]
-            del stats["max"]
         return stats
 
 

@@ -224,6 +224,10 @@ def test_superfluous_unzip():
         "max": "30Mi",
         "nulls": "1"
     }),
+    ([40000], {
+        "mean": "39Ki"
+    }),
+    ([], None),
 ])
 def test_summarise_numbers(data, expected_smry):
     smry_dict = RangeFinder.summarise_numbers(data)
