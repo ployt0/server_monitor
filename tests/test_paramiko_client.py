@@ -1,13 +1,12 @@
 from typing import List
-import pytest
 from unittest.mock import patch, Mock, sentinel, call
 
 from paramiko.channel import ChannelFile
 from paramiko.client import SSHClient
-from paramiko.ssh_exception import AuthenticationException
+from paramiko.pkey import PKey
+from paramiko.ssh_exception import AuthenticationException, BadHostKeyException
 
 from paramiko_client import SSHInterrogator, MinerInterrogator
-
 
 SENTINEL_ERROR = RuntimeError("test injected")
 
@@ -61,7 +60,7 @@ def test_query_ports_fail(mock_error_handler, ss_lines_1):
 
 
 @patch("server_mon.ErrorHandler", autospec=True)
-@patch("paramiko_client.SSHInterrogator.initialise_connection")
+@patch("paramiko_client.SSHInterrogator.initialise_connection", return_value=None)
 @patch("paramiko_client.SSHInterrogator.remote_tentative_calls")
 def test_do_queries(mock_remote_tentative_calls, mock_initialise_connection, mock_error_handler, mock_rmt_pc_1):
     interrogator = SSHInterrogator(mock_error_handler)
@@ -71,7 +70,7 @@ def test_do_queries(mock_remote_tentative_calls, mock_initialise_connection, moc
 
 
 @patch("server_mon.ErrorHandler", autospec=True)
-@patch("paramiko_client.SSHInterrogator.initialise_connection")
+@patch("paramiko_client.SSHInterrogator.initialise_connection", return_value=None)
 @patch("paramiko_client.SSHInterrogator.remote_tentative_calls", side_effect=SENTINEL_ERROR)
 def test_do_queries_throwing(mock_remote_tentative_calls, mock_initialise_connection, mock_error_handler, mock_rmt_pc_1):
     interrogator = SSHInterrogator(mock_error_handler)
@@ -86,7 +85,8 @@ def test_do_queries_throwing(mock_remote_tentative_calls, mock_initialise_connec
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
 def test_initialise_connection(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_1):
     interrogator = SSHInterrogator(mock_error_handler)
-    interrogator.initialise_connection(mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
+    con_err_str = interrogator.initialise_connection(mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
+    assert con_err_str is None
     mock_ssh_object = mock_ssh_client.return_value
     mock_ssh_object.load_system_host_keys.assert_called_once_with()
     mock_ssh_object.set_missing_host_key_policy.assert_called_once_with(mock_autoaddpolicy.return_value)
@@ -99,11 +99,12 @@ def test_initialise_connection(mock_autoaddpolicy, mock_ssh_client, mock_error_h
 @patch("server_mon.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHClient", autospec=True)
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
-def test_initialise_connection_failover(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_2):
+def test_initialise_connection_alt_auth_method(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_2):
     interrogator = SSHInterrogator(mock_error_handler)
     mock_ssh_object = mock_ssh_client.return_value
-    mock_ssh_object.connect.side_effect=[AuthenticationException, None]
-    interrogator.initialise_connection(mock_rmt_pc_2["ip"], mock_rmt_pc_2["creds"])
+    mock_ssh_object.connect.side_effect = [AuthenticationException, None]
+    con_err_str = interrogator.initialise_connection(mock_rmt_pc_2["ip"], mock_rmt_pc_2["creds"])
+    assert con_err_str is None
     mock_ssh_object.load_system_host_keys.assert_called_once_with()
     mock_ssh_object.set_missing_host_key_policy.assert_called_once_with(mock_autoaddpolicy.return_value)
     mock_ssh_object.connect.assert_has_calls([
@@ -122,14 +123,50 @@ def test_initialise_connection_failover(mock_autoaddpolicy, mock_ssh_client, moc
 @patch("server_mon.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHClient", autospec=True)
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
-def test_initialise_connection_fail(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_1):
+def test_initialise_connection_auth_exception(
+        mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_1):
     interrogator = SSHInterrogator(mock_error_handler)
     mock_ssh_object = mock_ssh_client.return_value
-    mock_ssh_object.connect.side_effect=AuthenticationException
-    with pytest.raises(AuthenticationException) as e_info:
-        interrogator.initialise_connection(mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
+    mock_ssh_object.connect.side_effect = AuthenticationException
+    con_err_str = interrogator.initialise_connection(
+        mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
+    assert con_err_str == f"No credentials were accepted by the remote host: " \
+                          f"{mock_rmt_pc_1['ip']}"
     mock_ssh_object.load_system_host_keys.assert_called_once_with()
-    mock_ssh_object.set_missing_host_key_policy.assert_called_once_with(mock_autoaddpolicy.return_value)
+    mock_ssh_object.set_missing_host_key_policy.assert_called_once_with(
+        mock_autoaddpolicy.return_value)
+    mock_ssh_object.connect.assert_called_once_with(
+        mock_rmt_pc_1["ip"],
+        **mock_rmt_pc_1["creds"][0])
+    mock_ssh_client.assert_called_once_with()
+
+
+@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.SSHClient", autospec=True)
+@patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
+def test_initialise_connection_bad_key_exception(
+        mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_1):
+    SAMPLE_PKEY1 = '''-----BEGIN PUBLIC KEY-----
+    MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAb/zKywAh+kmIT2i4imUxBtU9deJU2qyA
+    MlbKqTcVHLqQBTnQ0LuPYsZSQMjLr/Ec/iLNrpyNdD+e2Apjnhk5PwIDAQAB
+    -----END PUBLIC KEY-----'''
+
+    SAMPLE_PKEY2 = '''-----BEGIN PUBLIC KEY-----
+    MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAICEJPZYhT1SIHEFJUiEMHNBdILWPTKh
+    Csk0V5HzajjxFq+F8pAYtQE56Sr27ogVBB6K07yk/GPlcxEc95h9deECAwEAAQ==
+    -----END PUBLIC KEY-----'''
+    interrogator = SSHInterrogator(mock_error_handler)
+    mock_ssh_object = mock_ssh_client.return_value
+    mock_ssh_object.connect.side_effect = BadHostKeyException(
+        mock_rmt_pc_1['ip'],
+        Mock(PKey, get_base64=lambda: SAMPLE_PKEY1),
+        Mock(PKey, get_base64=lambda: SAMPLE_PKEY2))
+    con_err_str = interrogator.initialise_connection(
+        mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
+    assert f"'{mock_rmt_pc_1['ip']}' does not match" in con_err_str
+    mock_ssh_object.load_system_host_keys.assert_called_once_with()
+    mock_ssh_object.set_missing_host_key_policy.assert_called_once_with(
+        mock_autoaddpolicy.return_value)
     mock_ssh_object.connect.assert_called_once_with(
         mock_rmt_pc_1["ip"],
         **mock_rmt_pc_1["creds"][0])
@@ -230,7 +267,7 @@ def test_query_gpus(mock_read_gpu, mock_error_handler, nvidia_smi_lines_1):
 
 
 @patch("server_mon.ErrorHandler", autospec=True)
-@patch("paramiko_client.SSHInterrogator.initialise_connection")
+@patch("paramiko_client.SSHInterrogator.initialise_connection", return_value=None)
 @patch("paramiko_client.MinerInterrogator.query_gpus")
 @patch("paramiko_client.SSHInterrogator.remote_tentative_calls")
 def test_miner_do_queries(
@@ -250,4 +287,6 @@ def test_miner_do_queries(
 def test_miner_do_queries_fail(mock_initialise_connection, mock_error_handler, mock_rmt_pc_1):
     interrogator = MinerInterrogator(mock_error_handler)
     interrogator.do_queries(mock_rmt_pc_1)
+    mock_initialise_connection.assert_called_once_with(
+        mock_rmt_pc_1["ip"], mock_rmt_pc_1["creds"])
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)

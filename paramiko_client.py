@@ -31,7 +31,7 @@ class SSHInterrogator:
         except Exception as e:
             self.err_handler.append(e)
 
-    def initialise_connection(self, ip_address: str, credentials: List[Dict[str,str]]) -> str:
+    def initialise_connection(self, ip_address: str, credentials: List[Dict[str,str]]) -> Optional[str]:
         """
         All of this should be wrapped in a try catch for when paramiko/network throws a curve ball.
 
