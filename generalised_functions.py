@@ -255,7 +255,7 @@ Servers file is a list of servers with these fields:
           "key_filename": "/home/megs/.ssh/id_rsa"
         }
       ],
-      "http_target": "optional path component of URL to request.",
+      "home_page": "For node monitoring this is the origin or other URL to be requested.",
       "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
       "known_ports": "known or permitted listening ports, separated by commas."
     }

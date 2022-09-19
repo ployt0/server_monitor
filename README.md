@@ -128,7 +128,7 @@ The nodes/inventory json file contains a list of machines identified by
         "key_filename": "/home/megs/.ssh/id_rsa"
       }
     ],
-    "http_target": "optional path component of URL to request.",
+    "home_page": "optional path component of URL to request.",
     "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
     "known_ports": "known or permitted listening ports, separated by commas."
 }
@@ -140,9 +140,11 @@ The nodes/inventory json file contains a list of machines identified by
 target needs to stop accepting passwords and use keys instead) the next will
 be tried.
 
-The following are optional:
+`home_page` gives the exact URL to be queried requested by the `requests`
+library. Increasingly this will be https, and may include subdomains or paths.
+Hence the IP address alone is insufficient.
 
-- `http_target` allows a path below the domain root to be requested with HTTP.
+The following are optional:
 
 - `ssh_peers` allows a comma separated list of those IPs we can disregard when
   examining SSH sessions.

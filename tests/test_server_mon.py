@@ -30,10 +30,10 @@ def test_interrog_routine(mock_queries, mock_get, mock_check_result):
     sample_latencies = ['16.0', '15.0', '18.0', '16.0']
     ave_latency = str(int(round(sum(map(float, sample_latencies)) / len(sample_latencies))))
     max_latency = str(int(round(max(map(float, sample_latencies)))))
-    interrog_routine(err_handler, {}, result_holder, sentinel.ipv4, sample_latencies)
+    interrog_routine(err_handler, {"home_page": sentinel.home_page}, result_holder, sentinel.ipv4, sample_latencies)
     mock_check_result.assert_called_once_with(
         result_holder.time.strftime(DAY_TIME_FMT), sentinel.ipv4, ave_latency, max_latency,
         str(int(round(1000 * mock_http_response_time))), str(mock_get.return_value.status_code), None, None,
         None, None, None, None)
     mock_queries.assert_called_once()
-    mock_get.assert_called_once_with("http://sentinel.ipv4", timeout=5)
+    mock_get.assert_called_once_with(sentinel.home_page, timeout=5)
