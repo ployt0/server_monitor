@@ -6,8 +6,8 @@ This repo helps to monitor a remote server by first checking its ping.
 It then attempts to SSH in and run further tests. The results are recorded
 in the "results" subdirectory for each month and node type.
 
-Currently, there are 2 node types: miner and ordinary node. The Ordinary
-node type attempts HTTP requests and records the return code and latency.
+Currently, there are 2 node types: miner and ordinary node. The ordinary
+node type attempts HTTP(S) requests and records the return code and latency.
 This may be an assumption too far. Miner node prefers instead to query
 `nvidia-smi` collecting: power use, memory use, and temperatures.
 
@@ -17,7 +17,7 @@ HTTP endpoint checks can be disabled by inheriting and overriding.
 other role-specific functionality.
 
 The starting point for this project was [server_pinger.py](server_pinger.py).
-It simply pings are records latency on the control node.
+It simply pings and records latency on the control node.
 
 ## Installation
 
@@ -103,8 +103,7 @@ $ systemctl status rmt-monitor
 $ journalctl -b -u rmt-monitor.service
 ```
 
-The one about `journalctl` is my favourite but all three help make the case for
-preferring systemd to cron.
+`journalctl` is most comprehensive; all three make a case for systemd over cron.
 
 Now to add another unit file, let's say, "monitor-mailer.service", calling the
 same [server_mon.py](server_mon.py) but emailing the metrics, for the month:
@@ -128,7 +127,7 @@ The nodes/inventory json file contains a list of machines identified by
         "key_filename": "/home/megs/.ssh/id_rsa"
       }
     ],
-    "home_page": "optional path component of URL to request.",
+    "home_page": "For node monitoring the URL to a page to request, as health check / heartbeat.",
     "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
     "known_ports": "known or permitted listening ports, separated by commas."
 }
