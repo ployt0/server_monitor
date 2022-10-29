@@ -1,0 +1,80 @@
+---
+
+- name: Provision NGINX server
+  hosts: all
+  become: yes
+  vars:
+    domain_name: "{{ ansible_host }}"
+    document_root: /var/www/html
+    tls_cert_file: /etc/ssl/certs/nginx-selfsigned.crt
+    tls_cert_key: /etc/ssl/private/nginx-selfsigned.key
+
+  tasks:
+  - name: Display local user
+    become: no
+    ansible.builtin.debug:
+      msg: "{{ lookup('env','USER') }}"
+
+  - name: Install required OS packages
+    ansible.builtin.apt:
+      name:
+        - unzip
+        - nginx
+      update_cache: yes
+
+  - name: Create document_root
+    ansible.builtin.file:
+      path: "{{ document_root }}"
+      state: directory
+      owner: www-data
+      group: www-data
+
+  - name: Customise content.
+    ansible.builtin.shell: |
+      if [ ! -e "{{ document_root }}/provisioned.html" ]; then
+        echo "hello from ansible" | tee "{{ document_root }}/index.html"
+      fi
+    register: out
+    changed_when: ('hello from ansible' in out.stdout)
+
+
+  - name: Parameterise NGINX configuration
+    ansible.builtin.template:
+      src: local-serverblock.j2
+      dest: "/etc/nginx/sites-available/{{ domain_name }}"
+
+
+  - name: local host branch
+    block:
+      - name: Generate keypair for self-signed ssl
+        ansible.builtin.command:
+          creates: "{{ tls_cert_key }}"
+          cmd: >
+            openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1
+            -days 365 -nodes -x509 -subj "/CN={{ domain_name }}"
+            -keyout "{{ tls_cert_key }}" -out "{{ tls_cert_file }}"
+
+
+  - name: Enable configuration
+    ansible.builtin.shell: |
+      # nginx -t  # to check
+      if ls /etc/nginx/sites-enabled/default; then
+        rm /etc/nginx/sites-enabled/default
+        echo this task changed something
+      fi
+      if ! ls /etc/nginx/sites-enabled/{{ domain_name }}; then
+        ln -s /etc/nginx/sites-available/{{ domain_name }} /etc/nginx/sites-enabled/
+        echo this task changed something
+        nginx -s reload
+      fi
+    register: enable_nginxconf
+    changed_when: enable_nginxconf.stdout.find("this task changed something") != -1
+
+
+  - name: Completed at
+    become: no
+    connection: local
+    ansible.builtin.debug:
+      msg:
+        - "Completed at {{ ansible_date_time.time }}"
+

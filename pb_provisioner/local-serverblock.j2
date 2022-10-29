@@ -1,0 +1,23 @@
+limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s;
+
+server {
+    limit_req zone=one burst=5 nodelay;
+
+    listen 443 ssl;
+    ssl_certificate {{ tls_cert_file }};
+    ssl_certificate_key {{ tls_cert_key }};
+    include /etc/nginx/snippets/ssl-params.conf;
+
+    root {{ document_root }};
+    index index.html index.htm;
+
+    server_name {{ domain_name }};
+
+    error_log /var/log/nginx/{{ domain_name }}_error.log;
+    access_log /var/log/nginx/{{ domain_name }}_access.log;
+}
+
+server {
+    return 301 https://$host$request_uri;
+    server_name {{ domain_name }};
+}
