@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import requests
 from datetime import datetime
 import json
-import platform
-import re
 import smtplib
-import subprocess
 import traceback
 from email.message import EmailMessage
 from pathlib import Path
@@ -14,6 +12,8 @@ from typing import List, Dict, Optional, Any, Callable, Union
 
 from checks_interface import ChecksInterface
 from html_tabulating import tabulate_csv_as_html
+from ping_functions import get_ping_latencies
+
 
 _MONITOR_EMAIL = "insert_email_here.Can_be_read_from_json_config."
 PUBLIC_IP = "where we test from. Can be read from json config."
@@ -58,13 +58,6 @@ def send_email(msg: EmailMessage, email_from_addy: str, password: str):
         smtp.send_message(msg)
     finally:
         smtp.quit()
-
-
-def ping(host: str) -> subprocess.CompletedProcess:
-    pkt_cnt_flag = "-n" if platform.system().lower() == "windows" else "-c"
-    command = ['ping', pkt_cnt_flag, '4', host]
-
-    return subprocess.run(command, capture_output=True)
 
 
 def plural(quantity, extension="s"):
@@ -242,7 +235,7 @@ def parse_args_for_monitoring(
 Collects information on ping and http responses as well as some basic shell 
 commands over SSH.
 
-Servers file is a list of servers with these fields:
+nodes_file is a list of servers with these fields:
 
 {
   "servers": [
@@ -378,6 +371,8 @@ def iterate_rmt_servers(
     _MONITOR_EMAIL = config.get("email_dest", _MONITOR_EMAIL)
     err_handler = ErrorHandler()
     PUBLIC_IP = config.get("this_ip", PUBLIC_IP)
+    # What to do with this, we'll record and track it later.
+    runners_ip = get_public_ip()
     for rmt_pc in config["servers"]:
         ipv4 = rmt_pc["ip"]
         latencies = get_ping_latencies(err_handler, ipv4)
@@ -391,11 +386,7 @@ def iterate_rmt_servers(
     return err_handler
 
 
-def get_ping_latencies(err_handler, ipv4: str) -> List[str]:
-    err_handler.current_ip = ipv4
-    result = ping(ipv4)
-    if result.returncode == 0:
-        # An unreachable host can still return 0.
-        output = result.stdout.decode()
-        return re.findall(r"time=([\d. ]+)ms", output)
-    return []
+def get_public_ip() -> str:
+    res = requests.get("http://ipinfo.io")
+    jres = res.json()
+    return jres["ip"]

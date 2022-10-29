@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch, call, sentinel, mock_open
 import pytest
 
 from generalised_functions import find_cells_under, format_ipv4, plural, \
-    send_email, \
+    send_email, get_public_ip, \
     compose_email, parse_args_for_monitoring, ChecksInterface, \
     email_wout_further_checks, load_results, RESULTS_DIR, \
     ErrorHandler, _MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
@@ -366,4 +366,26 @@ def test_iterate_rmt_servers_good_pings(
         mock_result_holder, sentinel.ip, iterable_latencies)
     mock_get_pings.assert_called_once_with(err_handler, sentinel.ip)
     mocked_open.assert_called_once_with(sentinel.file_name, encoding="utf8")
+
+
+@patch("generalised_functions.requests.get")
+def test_get_public_ip(mock_requests_get):
+    test_ip = "8.8.8.8"
+    mock_requests_get.return_value.json.return_value = {
+        "ip": test_ip,
+        "hostname": "9f271a71.btinternet.com",
+        "city": "Birmingham",
+        "region": "England",
+        "country": "GB",
+        "loc": "52.4778,-1.8990",
+        "org": "AS2856 British Telecommunications PLC",
+        "postal": "B2",
+        "timezone": "Europe/London",
+        "readme": "https://ipinfo.io/missingauth"
+    }
+    pub_ip = get_public_ip()
+    assert pub_ip == test_ip
+
+
+
 

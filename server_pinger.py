@@ -22,7 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-from generalised_functions import format_ipv4, ping, RESULTS_DIR
+from generalised_functions import format_ipv4, RESULTS_DIR
+from ping_functions import ping
 
 DATE_TIME_FMT = "%y%m%d %H:%M:%S"
 DATE_FMT = "%y%m%d"

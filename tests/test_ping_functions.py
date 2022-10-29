@@ -1,7 +1,8 @@
 import subprocess
 from unittest.mock import Mock, patch, sentinel
 
-from generalised_functions import ErrorHandler, ping, get_ping_latencies
+from generalised_functions import ErrorHandler
+from ping_functions import ping, get_ping_latencies
 
 STDOUT_WINDOWS_ONLINE = \
     b'\r\nPinging 8.8.8.8 with 32 bytes of data:\r\nReply from 8.8.8.8: bytes=32 time=16ms TTL=119\r\nReply from ' \
@@ -35,11 +36,11 @@ STDOUT_LINUX_FAILURE = \
     b'transmitted, 0 received, +3 errors, 100% packet loss, time 3080ms\n\n '
 
 
-@patch("generalised_functions.subprocess.run", return_value=Mock(
+@patch("ping_functions.subprocess.run", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=0,
     stdout=STDOUT_WINDOWS_OFFLINE))
-@patch("generalised_functions.platform.system", return_value="windows")
+@patch("ping_functions.platform.system", return_value="windows")
 def test_ping_offline_windows(mock_system, mock_run):
     result = ping("8.8.8.8")
     mock_run.assert_called_once_with(
@@ -48,11 +49,11 @@ def test_ping_offline_windows(mock_system, mock_run):
     assert result.stdout == STDOUT_WINDOWS_OFFLINE
 
 
-@patch("generalised_functions.subprocess.run", return_value=Mock(
+@patch("ping_functions.subprocess.run", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=0,
     stdout=STDOUT_WINDOWS_ONLINE))
-@patch("generalised_functions.platform.system", return_value="windows")
+@patch("ping_functions.platform.system", return_value="windows")
 def test_ping_online_windows(mock_system, mock_run):
     result = ping("8.8.8.8")
     mock_run.assert_called_once_with(
@@ -61,11 +62,11 @@ def test_ping_online_windows(mock_system, mock_run):
     assert result.stdout == STDOUT_WINDOWS_ONLINE
 
 
-@patch("generalised_functions.subprocess.run", return_value=Mock(
+@patch("ping_functions.subprocess.run", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=1,
     stdout=STDOUT_WINDOWS_FAILURE))
-@patch("generalised_functions.platform.system", return_value="windows")
+@patch("ping_functions.platform.system", return_value="windows")
 def test_ping_failure_windows(mock_system, mock_run):
     result = ping("248.248.128.128")
     mock_run.assert_called_once_with(
@@ -74,11 +75,11 @@ def test_ping_failure_windows(mock_system, mock_run):
     assert result.stdout == STDOUT_WINDOWS_FAILURE
 
 
-@patch("generalised_functions.subprocess.run", return_value=Mock(
+@patch("ping_functions.subprocess.run", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=0,
     stdout=STDOUT_LINUX_ONLINE))
-@patch("generalised_functions.platform.system", return_value="linux")
+@patch("ping_functions.platform.system", return_value="linux")
 def test_ping_online_linux(mock_system, mock_run):
     result = ping("8.8.8.8")
     mock_run.assert_called_once_with(
@@ -87,11 +88,11 @@ def test_ping_online_linux(mock_system, mock_run):
     assert result.stdout == STDOUT_LINUX_ONLINE
 
 
-@patch("generalised_functions.subprocess.run", return_value=Mock(
+@patch("ping_functions.subprocess.run", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=1,
     stdout=STDOUT_LINUX_FAILURE))
-@patch("generalised_functions.platform.system", return_value="linux")
+@patch("ping_functions.platform.system", return_value="linux")
 def test_ping_failure_linux(mock_system, mock_run):
     result = ping("248.248.128.128")
     mock_run.assert_called_once_with(
@@ -100,7 +101,7 @@ def test_ping_failure_linux(mock_system, mock_run):
     assert result.stdout == STDOUT_LINUX_FAILURE
 
 
-@patch("generalised_functions.ping", return_value=Mock(
+@patch("ping_functions.ping", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=0,
     stdout=STDOUT_LINUX_ONLINE))
@@ -112,7 +113,7 @@ def test_get_ping_latencies_linux(mock_ping):
     assert list(map(float, latencies)) == [7.51, 7.63, 7.68, 7.46]
 
 
-@patch("generalised_functions.ping", return_value=Mock(
+@patch("ping_functions.ping", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=1,
     stdout=STDOUT_LINUX_FAILURE))
@@ -123,7 +124,7 @@ def test_get_ping_latencies_linux_failure(mock_ping):
     assert len(latencies) == 0
 
 
-@patch("generalised_functions.ping", return_value=Mock(
+@patch("ping_functions.ping", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=0,
     stdout=STDOUT_WINDOWS_ONLINE))
@@ -135,7 +136,7 @@ def test_get_ping_latencies_windows(mock_ping):
     assert list(map(float, latencies)) == [16.0, 15.0, 18.0, 16.0]
 
 
-@patch("generalised_functions.ping", return_value=Mock(
+@patch("ping_functions.ping", return_value=Mock(
     subprocess.CompletedProcess,
     returncode=1,
     stdout=STDOUT_WINDOWS_FAILURE))
