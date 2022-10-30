@@ -31,8 +31,7 @@ def send_email(msg: EmailMessage, email_from_addy: str, password: str):
     """
     EmailMessage will already contain particular fields, such as "subject".
     This function just uses an account to actually send it.
-    """
-    """
+
     To help keep your account secure, from **May 30, 2022**, Google no longer
     supports the use of third-party apps or devices which ask you to sign in
     to your Google Account using only your username and password.
