@@ -4,6 +4,7 @@ import argparse
 import requests
 from datetime import datetime
 import json
+import smtplib
 import traceback
 from email.message import EmailMessage
 from pathlib import Path
