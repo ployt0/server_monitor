@@ -35,7 +35,7 @@ def send_email(msg: EmailMessage, email_from_addy: str, password: str):
     To help keep your account secure, from **May 30, 2022**, Google no longer
     supports the use of third-party apps or devices which ask you to sign in
     to your Google Account using only your username and password.
-    
+
     Solution:
         - Enable MFA
         - Crete "App password" per app (this app)
@@ -57,6 +57,23 @@ def send_email(msg: EmailMessage, email_from_addy: str, password: str):
         smtp.send_message(msg)
     finally:
         smtp.quit()
+
+
+def monitor_runners_ipv4():
+    """Keep a record of what IP we're on which might be useful in
+    whitelisting blocks for our future access to these servers."""
+    runners_ip = get_public_ip()
+    try:
+        with open(f"{RESULTS_DIR}/public_ip_history.txt") as f:
+            lines = f.read().splitlines()
+            last_ip = lines[-1]
+    except FileNotFoundError:
+        last_ip = ""
+    if last_ip != runners_ip:
+        with open(f"{RESULTS_DIR}/public_ip_history.txt", "a+") as f:
+            f.write(runners_ip)
+    global PUBLIC_IP
+    PUBLIC_IP = runners_ip
 
 
 def plural(quantity, extension="s"):
@@ -370,12 +387,12 @@ def iterate_rmt_servers(
     # Open nodes files from outside source control (don't commit credentials):
     with open(nodes_file_name, encoding="utf8") as f:
         config = json.load(f)
-    global _MONITOR_EMAIL, PUBLIC_IP
+    global _MONITOR_EMAIL
     _MONITOR_EMAIL = config.get("email_dest", _MONITOR_EMAIL)
     err_handler = ErrorHandler()
-    PUBLIC_IP = config.get("this_ip", PUBLIC_IP)
-    # What to do with this, we'll record and track it later.
-    runners_ip = get_public_ip()
+    # PUBLIC_IP = config.get("this_ip", PUBLIC_IP)
+    monitor_runners_ipv4()
+
     for rmt_pc in config["servers"]:
         ipv4 = rmt_pc["ip"]
         latencies = get_ping_latencies(err_handler, ipv4)

@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch, call, sentinel, mock_open
 import pytest
 
 from generalised_functions import find_cells_under, format_ipv4, plural, \
-    send_email, get_public_ip, \
+    send_email, get_public_ip, monitor_runners_ipv4, \
     compose_email, parse_args_for_monitoring, ChecksInterface, \
     email_wout_further_checks, load_results, RESULTS_DIR, \
     ErrorHandler, _MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
@@ -355,10 +355,24 @@ def test_process_args_and_email(mock_iterate_rmt_servers, mock_result_holder, mo
     mock_iterate_rmt_servers.assert_not_called()
     mock_err_handler.assert_not_called()
     mock_interrog.assert_not_called()
-    mock_email_wout_further_checks.assert_called_with(
+    mock_email_wout_further_checks.assert_called_once_with(
         sentinel.email_to, sentinel.email_addy, sentinel.password, mock_ci)
 
 
+@patch("generalised_functions.get_public_ip", return_value=sentinel.pub_ip)
+def test_monitor_runners_ipv4(mocked_get_public_ip):
+    with patch("builtins.open",
+               mock_open(read_data="8.8.8.8\n")) as mocked_open:
+        monitor_runners_ipv4()
+        mocked_open.assert_has_calls([
+            call(f"{RESULTS_DIR}/public_ip_history.txt"),
+            call(f"{RESULTS_DIR}/public_ip_history.txt", "a+")
+        ], any_order=True)
+        mocked_open.return_value.write.assert_called_once_with(sentinel.pub_ip)
+    mocked_get_public_ip.assert_called_once_with()
+
+
+@patch("generalised_functions.monitor_runners_ipv4", autospec=True)
 @patch("generalised_functions.IInterrogator", autospec=True)
 @patch("generalised_functions.ResultHolder", autospec=True)
 @patch("generalised_functions.ChecksInterface")
@@ -367,7 +381,7 @@ def test_process_args_and_email(mock_iterate_rmt_servers, mock_result_holder, mo
 @patch("generalised_functions.json.load", autospec=True)
 def test_iterate_rmt_servers_good_pings(
         mock_json_load, mock_get_pings, mocked_open, mock_ci,
-        mock_result_holder, mock_interrog):
+        mock_result_holder, mock_interrog, mock_ipv4_monitor):
     iterable_latencies = ["21.43", "24.21", "27.87"]
     mock_get_pings.return_value = iterable_latencies
     mock_rmt_pc = {
@@ -386,6 +400,7 @@ def test_iterate_rmt_servers_good_pings(
         mock_result_holder, sentinel.ip, iterable_latencies)
     mock_get_pings.assert_called_once_with(err_handler, sentinel.ip)
     mocked_open.assert_called_once_with(sentinel.file_name, encoding="utf8")
+    mock_ipv4_monitor.assert_called_once_with()
 
 
 @patch("generalised_functions.requests.get")
