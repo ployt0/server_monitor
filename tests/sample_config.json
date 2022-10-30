@@ -5,7 +5,7 @@
         "creds": [
             {
                 "username": "testrunner",
-                "key_filename": "key_filename_and_path_here_please"
+                "key_filename": "build_directory/rsa_key"
             }
         ],
         "known_ports": "22,80,443",

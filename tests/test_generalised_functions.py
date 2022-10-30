@@ -13,7 +13,7 @@ from generalised_functions import find_cells_under, format_ipv4, plural, \
     compose_email, parse_args_for_monitoring, ChecksInterface, \
     email_wout_further_checks, load_results, RESULTS_DIR, \
     ErrorHandler, _MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
-    IInterrogator, iterate_rmt_servers, convert_python_date_to_human
+    IInterrogator, iterate_rmt_servers, convert_date_to_human_readable
 
 
 def test_easy_find_cells_under(ss_lines_1):
@@ -41,24 +41,44 @@ def test_format_ipv4():
     assert format_ipv4("111.111.111.111") == "111.111.111.111"
 
 
-def test_plural():
-    assert plural(4) == "s"
-    assert plural(1) == ""
-    assert plural(4, "eses") == "eses"
-    assert plural(1, "eses") == ""
-    assert plural([4], "eses") == ""
-    assert plural([1, 2, 34], "eses") == "eses"
+@pytest.mark.parametrize("plural_args, expected_suffix", [
+    ((4,), "s"),
+    ((1,), ""),
+    ((4, "eses",), "eses"),
+    ((1, "eses",), ""),
+    (([4], "eses",), ""),
+    (([1, 2, 34], "eses",), "eses"),
+])
+def test_plural(plural_args, expected_suffix):
+    assert plural(*plural_args) == expected_suffix
 
 
+@pytest.mark.parametrize("who_b_date, expected_human_date", [
+    ("Oct 30 06:10:57 2022", "Oct 30 06:10"),
+    ("Oct 30 06:10:57 2021", "Oct 30 2021"),
+    ("Oct 29 06:10:57 2022", "Oct 29 06:10"),
+    ("Oct 29 06:10:57 2021", "Oct 29 2021")
+])
 @patch("generalised_functions.datetime", spec=datetime)
-def test_convert_python_date_to_human(mock_datetime):
+def test_convert_last_reboot_date_to_human(mock_datetime, who_b_date, expected_human_date):
     mock_datetime.utcnow = Mock(
         return_value=datetime.datetime(2022, 1, 13, 13, 30, 00))
     mock_datetime.strptime = datetime.datetime.strptime
-    assert convert_python_date_to_human("2022-07-06 21:31") == "Jul  6 21:31"
-    assert convert_python_date_to_human("2021-07-06 21:31") == "Jul  6 2021"
-    assert convert_python_date_to_human("2022-07-26 21:31") == "Jul 26 21:31"
-    assert convert_python_date_to_human("2021-07-26 21:31") == "Jul 26 2021"
+    assert convert_date_to_human_readable(who_b_date, "%b %d %H:%M:%S %Y") == expected_human_date
+
+
+@pytest.mark.parametrize("who_b_date, expected_human_date", [
+    ("2022-07-06 21:31", "Jul  6 21:31"),
+    ("2021-07-06 21:31", "Jul  6 2021"),
+    ("2022-07-26 21:31", "Jul 26 21:31"),
+    ("2021-07-26 21:31", "Jul 26 2021")
+])
+@patch("generalised_functions.datetime", spec=datetime)
+def test_convert_who_b_date_to_human(mock_datetime, who_b_date, expected_human_date):
+    mock_datetime.utcnow = Mock(
+        return_value=datetime.datetime(2022, 1, 13, 13, 30, 00))
+    mock_datetime.strptime = datetime.datetime.strptime
+    assert convert_date_to_human_readable(who_b_date, "%Y-%m-%d %H:%M") == expected_human_date
 
 
 @patch("generalised_functions.smtplib.SMTP", spec=smtplib.SMTP)
