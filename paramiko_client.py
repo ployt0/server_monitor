@@ -6,7 +6,7 @@ from paramiko import SSHClient
 from paramiko.ssh_exception import AuthenticationException, BadHostKeyException
 
 from generalised_functions import ErrorHandler, find_cells_under, \
-    convert_python_date_to_human
+    convert_date_to_human_readable
 import generalised_functions
 
 
@@ -45,6 +45,7 @@ class SSHInterrogator:
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         for creds in credentials:
             try:
+                print(creds)
                 self.client.connect(ip_address, **creds)
                 break
             except BadHostKeyException as bhk:
@@ -85,14 +86,35 @@ class SSHInterrogator:
             stdin, stdout, stderr = self.client.exec_command("who -b")
             # The result is numeric when run locally, but on some servers
             # it will begin with the month as 3 letters, which by convention
-            # I will use convert_python_date_to_human to standardise to.
-            uptime_line = stdout.readlines()[0].strip()
-            up_since = uptime_line[len("system boot"):].strip()
-            if "0" <= up_since[0] <= "9":
-                up_since = convert_python_date_to_human(up_since)
-            self.last_boot = up_since
+            try:
+                uptime_line = stdout.readlines()[0].strip()
+            except IndexError as ie:
+                self.query_boot_time_deb()
+            else:
+                up_since = uptime_line[len("system boot"):].strip()
+                if "0" <= up_since[0] <= "9":
+                    up_since = convert_date_to_human_readable(
+                        up_since, "%Y-%m-%d %H:%M")
+                self.last_boot = up_since
         except Exception as e:
             self.err_handler.append(e)
+
+    def query_boot_time_deb(self):
+        """
+        `who -b` didn't work on my debian-slim docker container.
+        Hence this method is suffixed "_deb". It may be docker specific, but
+        shows what I have left to test: centos and fedora for example.
+        `uptime` gave the build time, IMO, it was an hour and five before `last reboot`.
+        Reading my host's filesystem, and `docker inspect`, I suspect the true
+        value is somewhere in between. `uptime` is harder to process.
+        """
+        stdin, stdout, stderr = self.client.exec_command("last reboot")
+        uptime_line = stdout.readlines()[-1].strip()
+        # eg: Sun Oct 30 06:10:57 2022 -> Oct 30 06:10:57 2022
+        boot_tm_str = uptime_line[len("wtmp begins dow "):].strip()
+        up_since = convert_date_to_human_readable(
+            boot_tm_str, "%b %d %H:%M:%S %Y")
+        self.last_boot = up_since
 
     def query_ports(self, known_ports: Set[str]) -> None:
         """

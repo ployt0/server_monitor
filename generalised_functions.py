@@ -76,14 +76,17 @@ def plural(quantity, extension="s"):
     return extension if count != 1 else ""
 
 
-def convert_python_date_to_human(yyyy_mm_dd_time):
-    cur_year = str(datetime.utcnow().year)
-    if yyyy_mm_dd_time.startswith(cur_year):
+def convert_date_to_human_readable(date_str, date_formatter):
+    """
+    Standardises date string to show month, day, and time if year is same, else
+    year.
+    """
+    py_date = datetime.strptime(date_str, date_formatter)
+    if py_date.year == datetime.utcnow().year:
         fstring = "%b %-d %H:%M"
     else:
         fstring = "%b %-d %Y"
-    return "{} {:>2} {}".format(*datetime.strptime(
-        yyyy_mm_dd_time, "%Y-%m-%d %H:%M").strftime(fstring).split(" "))
+    return "{} {:>2} {}".format(*py_date.strftime(fstring).split(" "))
 
 
 def find_cells_under(table_lines: List[str], col_header: str) -> List[str]:
