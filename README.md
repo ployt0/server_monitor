@@ -152,4 +152,10 @@ For that reason integration testing is advisable.
 
 Integration testing was introduced October 30th 2022.
 
+### Output
+
+The output takes the form of a line of CSV for each node under test, each time the script is run. By default, this is the `results` subdirectory, set globally as `RESULTS_DIR = "results"`.
+
+The columns names are not given in the file (to keep it compact) but may be found in the `to_csv()` method, eg [CheckResult.to_csv](server_mon.py).
+
 

@@ -80,7 +80,7 @@ jobs:
 
     - name: Stub out send_email function
       run: |
-        sed -i "/def send_email(msg: EmailMessage, email_from_addy: str, password: str)/,/smtp.quit()/cdef send_email(msg: EmailMessage, email_from_addy: str, password: str): pass" generalised_functions.py
+        sed -i "/def send_email(msg: EmailMessage, email_from_addy: str, password: str)/,/smtp.quit()/cdef send_email(msg: EmailMessage, email_from_addy: str, password: str): print(msg)" generalised_functions.py
 
     - name: Check send_email function stubbed
       run: |
