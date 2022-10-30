@@ -15,13 +15,6 @@
     ansible.builtin.debug:
       msg: "{{ lookup('env','USER') }}"
 
-  - name: Install required OS packages
-    ansible.builtin.apt:
-      name:
-        - unzip
-        - nginx
-      update_cache: yes
-
   - name: Create document_root
     ansible.builtin.file:
       path: "{{ document_root }}"
@@ -32,7 +25,7 @@
   - name: Customise content.
     ansible.builtin.shell: |
       if [ ! -e "{{ document_root }}/provisioned.html" ]; then
-        echo "hello from ansible" | tee "{{ document_root }}/index.html"
+        echo "hello from ansible" | tee "{{ document_root }}/provisioned.html"
       fi
     register: out
     changed_when: ('hello from ansible' in out.stdout)

@@ -9,7 +9,7 @@
             }
         ],
         "known_ports": "22,80,443",
-        "home_page": "http://172.17.0.2/index.html"
+        "home_page": "https://172.17.0.2/provisioned.html"
     }],
 "this_ip": "172.17.0.1",
 "email_dest": "notgoing@nowhere.com"

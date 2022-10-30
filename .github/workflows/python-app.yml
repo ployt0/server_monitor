@@ -76,11 +76,29 @@ jobs:
 
     - name: Run nginx container
       run: |
-        docker run -tid --name mytest host2test
+        docker run -tid --name nodeundertest host2test
+
+    - name: Stub out send_email function
+      run: |
+        sed "/def send_email(msg: EmailMessage, email_from_addy: str, password: str)/,/smtp.quit()/cdef send_email(msg: EmailMessage, email_from_addy: str, password: str): pass" generalised_functions.py | grep -A10 "def send_email"
+
+    - name: Test probing nginx HTTP
+      run: |
+        cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
+        sed -iE "s/172.17.0.2/$cont_ip/g" tests/sample_config.json
+        sed -iE "s|\"home_page\": .*|\"home_page\": \"http://$cont_ip/\"|" tests/sample_config.json
+        ./server_mon.py -n tests/sample_config.json email_agent_addy@gmail.com email_agent_password
+        tail -n1 results/node_*.csv
+        http_code=$(tail -n1 results/node_*.csv | cut -d "," -f 6)
+        if [ $http_code != "200" ]; then
+          exit 1
+        fi
+
+
 
     - name: Provision nginx container
       run: |
-        cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mytest)
+        cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
         cd pb_provisioner
         echo "$cont_ip ansible_ssh_private_key_file=../build_directory/rsa_key ansible_user=testrunner" > workflow_inventory
         cat workflow_inventory
@@ -89,14 +107,17 @@ jobs:
         ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook provision_server.yml -i workflow_inventory -v
 
 
-    - name: Integration test
+
+    - name: Test provisioned page
       run: |
-        cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mytest)
-        # Stub out email function:
-        sed "/def send_email(msg: EmailMessage, email_from_addy: str, password: str)/,/smtp.quit()/cdef send_email(msg: EmailMessage, email_from_addy: str, password: str): pass" generalised_functions.py | grep -A10 "def send_email"
-        #tar czf pyball.tar.gz *.py
-        #gzip -cd pyball.tar.gz | docker cp - mytest:/root
-        # May need to change more than this:
-        sed -iE "s/172.17.0.2/$cont_ip/g" tests/sample_config.json
+        cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
+        sed -iE '/"ip":/a\        "verify": "nginx-selfsigned.crt",' tests/sample_config.json
+        sed -iE "s|\"home_page\": .*\"|\"home_page\": \"http://$cont_ip/provisioned.html\"|" tests/sample_config.json
+        docker cp nodeundertest:/etc/ssl/certs/nginx-selfsigned.crt .
         ./server_mon.py -n tests/sample_config.json email_agent_addy@gmail.com email_agent_password
+        tail -n1 results/node_*.csv
+        http_code=$(tail -n1 results/node_*.csv | cut -d "," -f 6)
+        if [ $http_code != "200" ]; then
+          exit 1
+        fi
 

@@ -62,7 +62,7 @@ def interrog_routine(err_handler: ErrorHandler, rmt_pc: dict,
                      ipv4: str, latencies: List[str]):
     ave_latency_ms = str(int(round(sum(map(float, latencies)) / len(latencies))))
     max_latency_ms = str(int(round(max(map(float, latencies)))))
-    resp = requests.get(rmt_pc["home_page"], timeout=5)
+    resp = requests.get(rmt_pc["home_page"], timeout=5, verify=rmt_pc.get("verify", True))
     response_ms = str(int(round(1000 * resp.elapsed.total_seconds()))) \
         if resp.ok else None
     ssh_interrogator = SSHInterrogator(err_handler)

@@ -31,6 +31,8 @@ Failure to do this will not cause an email notification (as it had in the past).
 
 ## Installation
 
+This requires python 3.7 and above. I'll be moving to 3.9 and above asap.
+
 Install [requirements.txt](requirements.txt) in a venv on the control machine. None of the versions are pinned and I recently (23rd July 2022) discovered that my new server was no longer reachable by paramiko, despite ansible and regular SSH having no problems. The fix was to update the package in my venv:
 
 ```shell
@@ -111,6 +113,7 @@ The nodes/inventory json file contains a list of machines identified by "servers
         "key_filename": "/home/megs/.ssh/id_rsa"
       }
     ],
+    "verify": "Path to public key or cert. True or False to enable/disable.",
     "home_page": "For node monitoring the URL to a page to request, as health check / heartbeat.",
     "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
     "known_ports": "known or permitted listening ports, separated by commas."
@@ -126,6 +129,8 @@ The following are optional:
 - `ssh_peers` allows a comma separated list of those IPs we can disregard when examining SSH sessions.
 
 - `known_ports` is a comma separated list of ports we have accepted being open and so can be ignored by future reports.
+
+- `verify` gets passed to `requests.get`. Previously I'd assumed all servers were remote either recognised CA's or using unencrypted HTTP. `verify` allows self-signing. Pass the name of the cert, or False, with self-signing.
 
 The full structure of the json nodes file (eg monitored_nodes.json) is then:
 
@@ -144,5 +149,7 @@ Google stopped allowing simple log in with username and password in May 2022. Th
 The `send_email` function threw `SMTPAuthenticationError` but had no way to report this other than local logs.
 
 For that reason integration testing is advisable.
+
+Integration testing was introduced October 30th 2022.
 
 
