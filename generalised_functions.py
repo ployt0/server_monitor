@@ -4,7 +4,6 @@ import argparse
 import requests
 from datetime import datetime
 import json
-import smtplib
 import traceback
 from email.message import EmailMessage
 from pathlib import Path
@@ -27,7 +26,37 @@ def format_ipv4(ipv4: str):
     return ".".join(["{:>3}".format(x) for x in ipv4.split(".")])
 
 
-def send_email(msg: EmailMessage, email_from_addy: str, password: str): pass
+def send_email(msg: EmailMessage, email_from_addy: str, password: str):
+    """
+    EmailMessage will already contain particular fields, such as "subject".
+    This function just uses an account to actually send it.
+    """
+    """
+    To help keep your account secure, from **May 30, 2022**, Google no longer
+    supports the use of third-party apps or devices which ask you to sign in
+    to your Google Account using only your username and password.
+    
+    Solution:
+        - Enable MFA
+        - Crete "App password" per app (this app)
+        - Use that password in place of your general password, I guess this
+            provides accountability as to who (or what password) logged in
+            as you.
+    """
+    # Use this account to send email to another:
+    msg["From"] = email_from_addy
+    # Attempt to make this work for other than gmail:
+    smtp_server = "smtp." + email_from_addy.split("@")[-1]
+    # 587 is the default TLS port we want to use:
+    smtp = smtplib.SMTP(smtp_server, 587)
+    try:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(msg["From"], password)
+        smtp.send_message(msg)
+    finally:
+        smtp.quit()
 
 
 def plural(quantity, extension="s"):
