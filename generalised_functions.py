@@ -273,7 +273,6 @@ nodes_file is a list of servers with these fields:
       "known_ports": "known or permitted listening ports, separated by commas."
     }
   ],
-  "this_ip": "ip address of testing machine, to exclude from peers list.",
   "email_dest": "email address to send notifications to."
 }
 """)
@@ -390,7 +389,6 @@ def iterate_rmt_servers(
     global _MONITOR_EMAIL
     _MONITOR_EMAIL = config.get("email_dest", _MONITOR_EMAIL)
     err_handler = ErrorHandler()
-    # PUBLIC_IP = config.get("this_ip", PUBLIC_IP)
     monitor_runners_ipv4()
 
     for rmt_pc in config["servers"]:

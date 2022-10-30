@@ -388,7 +388,6 @@ def test_iterate_rmt_servers_good_pings(
         "servers": [{
             "ip": sentinel.ip
         }],
-        "this_ip": sentinel.source_ip,
         "email_dest": "stringified_sentinel.monitoring_email"
     }
     mock_json_load.return_value = mock_rmt_pc

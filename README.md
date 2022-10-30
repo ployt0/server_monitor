@@ -137,7 +137,6 @@ The full structure of the json nodes file (eg monitored_nodes.json) is then:
 ```json
 {
   "servers": [],
-  "this_ip": "ip address of testing machine, to exclude from peers list.",
   "email_dest": "email address to send notifications to."
 }
 ```
