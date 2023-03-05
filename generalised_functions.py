@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+
 import requests
 from datetime import datetime
 import json
@@ -102,6 +104,8 @@ def convert_date_to_human_readable(date_str, date_formatter):
         fstring = "%b %-d %H:%M"
     else:
         fstring = "%b %-d %Y"
+    if os.name == 'nt':
+        fstring = fstring.replace("-", "#")
     return "{} {:>2} {}".format(*py_date.strftime(fstring).split(" "))
 
 
