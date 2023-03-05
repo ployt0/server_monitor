@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 
 import requests
+from requests.exceptions import SSLError
 
 from generalised_functions import format_ipv4, ErrorHandler, ResultHolder,\
     process_args, ChecksInterface, DAY_TIME_FMT
@@ -62,7 +63,11 @@ def interrog_routine(err_handler: ErrorHandler, rmt_pc: dict,
                      ipv4: str, latencies: List[str]):
     ave_latency_ms = str(int(round(sum(map(float, latencies)) / len(latencies))))
     max_latency_ms = str(int(round(max(map(float, latencies)))))
-    resp = requests.get(rmt_pc["home_page"], timeout=5, verify=rmt_pc.get("verify", True))
+    try:
+        resp = requests.get(rmt_pc["home_page"], timeout=5, verify=rmt_pc.get("verify", True))
+    except SSLError as ssl_e:
+        err_handler.append(ssl_e)
+        resp = requests.get(rmt_pc["home_page"], timeout=5, verify=False)
     response_ms = str(int(round(1000 * resp.elapsed.total_seconds()))) \
         if resp.ok else None
     ssh_interrogator = SSHInterrogator(err_handler)
