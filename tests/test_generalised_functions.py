@@ -96,7 +96,6 @@ def test_send_email(patched_smtp):
     mock_smtp.send_message.assert_called_once()
 
 
-# @patch("generalised_functions.EmailMessage.set_content", autospec=True)
 @patch.object(EmailMessage, "set_content", autospec=True)
 @patch("generalised_functions.plural", autospec=True, return_value="eze")
 @patch("generalised_functions.tabulate_csv_as_html", autospec=True,
@@ -110,9 +109,9 @@ def test_compose_email_unique_ips(
     assert msg["To"] == "dear@sir.com"
     assert msg["Subject"] == "3 ewok statuseze"
     patched_set_content.assert_called_once()
-    assert patched_set_content.mock_calls[0].args[1] == \
-           "sentinel.content\n<hr/>\nsentinel.content\n<hr/>\nsentinel.content"
-    assert patched_set_content.mock_calls[0].kwargs == {"subtype":"html"}
+    # autospec=True causes the "self" object (msg) to capture here:
+    patched_set_content.assert_called_once_with(
+        msg, "sentinel.content\n<hr/>\nsentinel.content\n<hr/>\nsentinel.content", subtype="html")
     patched_plural.assert_called_once_with(check_results, "es")
     patched_tabulate_csv_as_html.assert_has_calls([
         call("ipv4", [check_results[0]]),
