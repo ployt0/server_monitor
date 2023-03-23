@@ -86,9 +86,8 @@ def test_self_sign_interrog_routine(mock_queries, mock_get, mock_check_result):
     SSLError(), Mock(ok=True, status_code=200, elapsed=Mock(total_seconds=lambda:200))])
 @patch("server_mon.SSHInterrogator.do_queries", autospec=True)
 def test_interrog_routine_when_cert_expired(mock_queries, mock_get, mock_check_result):
-    mock_http_response_time = 0.0421
     sample_latencies = ['16.0', '15.0', '18.0', '16.0']
-    configure_mock_get(mock_get, mock_http_response_time)
+    # configure_mock_get(mock_get, mock_http_response_time)
     err_handler, result_holder = get_interrog_mock_args()
     interrog_routine(
         err_handler,
@@ -97,6 +96,23 @@ def test_interrog_routine_when_cert_expired(mock_queries, mock_get, mock_check_r
     mock_check_result.assert_called_once()
     assert mock_get.call_count == 2
     mock_queries.assert_called_once()
+    err_handler.append.assert_called_once()
+
+
+@patch("server_mon.CheckResult", autospec=True)
+@patch.object(requests, "get", autospec=True, side_effect=requests.exceptions.ConnectionError())
+@patch("server_mon.SSHInterrogator.do_queries", autospec=True)
+def test_interrog_routine_when_server_unresponsive(mock_queries, mock_get, mock_check_result):
+    sample_latencies = ['16.0', '15.0', '18.0', '16.0']
+    err_handler, result_holder = get_interrog_mock_args()
+    interrog_routine(
+        err_handler,
+        {"home_page": sentinel.home_page},
+        result_holder, sentinel.ipv4, sample_latencies)
+    mock_check_result.assert_not_called()
+    mock_get.assert_called_once()
+    mock_queries.assert_not_called()
+    err_handler.append.assert_called_once_with(mock_get.side_effect)
 
 
 
