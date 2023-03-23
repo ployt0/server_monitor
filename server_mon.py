@@ -68,6 +68,11 @@ def interrog_routine(err_handler: ErrorHandler, rmt_pc: dict,
     except SSLError as ssl_e:
         err_handler.append(ssl_e)
         resp = requests.get(rmt_pc["home_page"], timeout=5, verify=False)
+    except requests.exceptions.ConnectionError as awol_e:
+        # We failed. Not merely on TLS but the whole HTTP(S) response.
+        err_handler.append(awol_e)
+        # That will send us a whole, overly long, stack trace, later.
+        return
     response_ms = str(int(round(1000 * resp.elapsed.total_seconds()))) \
         if resp.ok else None
     ssh_interrogator = SSHInterrogator(err_handler)
