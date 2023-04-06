@@ -1,24 +1,11 @@
 import datetime
-from unittest.mock import patch, sentinel, Mock, create_autospec
+from unittest.mock import patch, sentinel, Mock
 
 import requests
-from requests import Response
 from requests.exceptions import SSLError
 
 from generalised_functions import ResultHolder, ErrorHandler, DAY_TIME_FMT
-from server_mon import CheckResult, interrog_routine
-
-
-@patch("server_mon.format_ipv4", return_value="yarp!")
-def test_CheckResult(mock_format_ipv4):
-    res = CheckResult(sentinel.time, sentinel.ipv4, sentinel.ping, sentinel.ping_max,
-                      sentinel.http_rtt, sentinel.http_code, sentinel.mem_avail, sentinel.swap_free,
-                      sentinel.disk_avail, sentinel.last_boot, sentinel.ports, sentinel.peers)
-    assert len(res.get_header().split(",")) == 12
-    mock_format_ipv4.assert_not_called()
-    assert len(res.to_csv().split(",")) == 12
-    mock_format_ipv4.assert_called_once_with(sentinel.ipv4)
-    assert res.get_unit_name() == "node"
+from server_mon import interrog_routine
 
 
 def configure_mock_get(mock_get, mock_http_response_time):

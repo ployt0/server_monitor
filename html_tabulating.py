@@ -5,7 +5,7 @@ from email.message import EmailMessage
 from statistics import stdev, mean
 from typing import List, Dict, Union, Tuple, Optional
 
-from checks_interface import ChecksInterface
+from check_result import CheckResult
 
 
 def find_invariant_cols(results: List[List[str]]) -> Dict[int, str]:
@@ -180,7 +180,7 @@ class RangeFinder:
         return stats
 
 
-def tabulate_csv_as_html(csv_header: str, results: List[ChecksInterface],
+def tabulate_csv_as_html(csv_header: str, results: List[CheckResult],
                          row_splits: int = 1) -> str:
     """
     :param csv_header: for the table header

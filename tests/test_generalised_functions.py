@@ -8,12 +8,13 @@ from unittest.mock import Mock, patch, call, sentinel, mock_open, create_autospe
 
 import pytest
 
-from generalised_functions import find_cells_under, format_ipv4, plural, \
+from generalised_functions import find_cells_under, plural, \
     send_email, get_public_ip, monitor_runners_ipv4, \
-    compose_email, parse_args_for_monitoring, ChecksInterface, \
+    compose_email, parse_args_for_monitoring, CheckResult, \
     email_wout_further_checks, load_results, RESULTS_DIR, \
     ErrorHandler, _MONITOR_EMAIL, ResultHolder, DATE_MON_FMT, process_args, \
     IInterrogator, iterate_rmt_servers, convert_date_to_human_readable
+from check_result import format_ipv4
 
 
 def test_easy_find_cells_under(ss_lines_1):
@@ -103,7 +104,7 @@ def test_send_email(patched_smtp):
 def test_compose_email_unique_ips(
         patched_tabulate_csv_as_html, patched_plural, patched_set_content):
     results = ["sentinel.result1", "sentinel.result2", "sentinel.result3"]
-    check_results = [Mock(ChecksInterface, to_csv=(lambda y: lambda: y)(x)) for
+    check_results = [Mock(CheckResult, to_csv=(lambda y: lambda: y)(x)) for
                      x in results]
     msg = compose_email(check_results, "dear@sir.com", "ipv4", "ewok", "")
     assert msg["To"] == "dear@sir.com"
@@ -126,7 +127,7 @@ def test_compose_email_unique_ips(
        return_value="sentinel.content")
 def test_compose_email(patched_tabulate_csv_as_html, patched_plural,
                        patched_email_set_content):
-    check_results = [Mock(ChecksInterface, to_csv=(lambda y: lambda: y)(x))
+    check_results = [Mock(CheckResult, to_csv=(lambda y: lambda: y)(x))
                      for x in
                      [
                          "1,metric1.1",
@@ -178,7 +179,7 @@ def test_parse_args_for_monitoring(extra_args, extra_expected_ns):
 def test_email_wout_further_checks(mock_send_email, mock_compose_email, mock_load_results, mock_datetime):
     mock_datetime.utcnow.return_value = datetime.datetime(2000, 1, 13, 13, 30, 00)
     email_month_to = "feedmenow@datahog"
-    mock_check_result = Mock(ChecksInterface)
+    mock_check_result = Mock(CheckResult)
     email_wout_further_checks(email_month_to, sentinel.sender, sentinel.password, mock_check_result)
     mock_send_email.assert_called_once_with(
         mock_compose_email.return_value, sentinel.sender, sentinel.password)
@@ -255,7 +256,7 @@ def test_result_holder():
 
 def test_result_holder_appends():
     result_holder = ResultHolder()
-    check_result = Mock(ChecksInterface)
+    check_result = Mock(CheckResult)
     result_holder.append(check_result)
     assert result_holder.results == [check_result]
 
@@ -264,7 +265,7 @@ def test_result_holder_saves():
     result_holder = ResultHolder()
     greet_sequence = ["hi", "hello", "good day", "evening"]
     # A second lambda wraps the original to capture the loop iterator which is lazily evaluated (captured when used).
-    check_results = [Mock(ChecksInterface, to_csv=(lambda y: lambda: y)(x)) for x in greet_sequence]
+    check_results = [Mock(CheckResult, to_csv=(lambda y: lambda: y)(x)) for x in greet_sequence]
     for result in check_results:
         result_holder.append(result)
     with patch("builtins.open", mock_open()) as mocked_open:
@@ -281,20 +282,20 @@ def test_result_holder_saves():
     "nodes_file": sentinel.nodes_file,
     "send_on_success": False
 })())
-@patch("generalised_functions.ChecksInterface", autospec=True)
+@patch("generalised_functions.CheckResult", autospec=True)
 @patch("generalised_functions.IInterrogator", autospec=True)
 @patch("generalised_functions.ResultHolder", autospec=True)
 @patch("generalised_functions.iterate_rmt_servers", autospec=True,
        return_value=create_autospec(ErrorHandler()))
 def test_process_args(
-        mock_iterate_rmt_servers, mock_result_holder, mock_interrog, mock_ci, mock_parse_args):
-    process_args(sentinel.args_list, mock_ci, mock_interrog)
+        mock_iterate_rmt_servers, mock_result_holder, mock_interrog, mock_c_res, mock_parse_args):
+    process_args(sentinel.args_list, mock_c_res, mock_interrog)
     mock_parse_args.assert_called_once_with(
-        sentinel.args_list, mock_ci.get_unit_name.return_value)
+        sentinel.args_list, mock_c_res.get_unit_name.return_value)
     mock_result_holder.assert_called_once_with()
     mock_iterate_rmt_servers.assert_called_once_with(
         sentinel.nodes_file,
-        mock_ci,
+        mock_c_res,
         mock_interrog,
         mock_result_holder.return_value)
 
@@ -308,23 +309,23 @@ def test_process_args(
 })())
 @patch("generalised_functions.send_email", autospec=True)
 @patch("generalised_functions.compose_email", return_value=sentinel.msg)
-@patch("generalised_functions.ChecksInterface", autospec=True)
+@patch("generalised_functions.CheckResult", autospec=True)
 @patch("generalised_functions.IInterrogator", autospec=True)
 @patch("generalised_functions.ResultHolder", autospec=True)
 @patch("generalised_functions.iterate_rmt_servers", autospec=True,
        return_value=create_autospec(ErrorHandler()))
 def test_process_args_then_send(
         mock_iterate_rmt_servers, mock_result_holder, mock_interrog,
-        mock_ci, mock_compose_email, mock_send_email, mock_parse_args):
-    mock_ci.get_unit_name.return_value = sentinel.unit
-    mock_ci.get_header.return_value = sentinel.header
+        mock_c_res, mock_compose_email, mock_send_email, mock_parse_args):
+    mock_c_res.get_unit_name.return_value = sentinel.unit
+    mock_c_res.get_header.return_value = sentinel.header
     mock_result_holder.return_value.results = sentinel.results
-    process_args(sentinel.args_list, mock_ci, mock_interrog)
+    process_args(sentinel.args_list, mock_c_res, mock_interrog)
     mock_parse_args.assert_called_once_with(sentinel.args_list, sentinel.unit)
     mock_result_holder.assert_called_once_with()
     mock_iterate_rmt_servers.assert_called_once_with(
         sentinel.nodes_file,
-        mock_ci,
+        mock_c_res,
         mock_interrog,
         mock_result_holder.return_value)
     mock_compose_email.assert_called_once_with(
@@ -332,14 +333,15 @@ def test_process_args_then_send(
     mock_send_email.assert_called_once_with(sentinel.msg, sentinel.email_addy, sentinel.password)
 
 
-@patch("generalised_functions.parse_args_for_monitoring", autospec=True, return_value=type('', (), {
+@patch("generalised_functions.parse_args_for_monitoring", autospec=True,
+       return_value=type('', (), {
     "email_to": sentinel.email_to,
     "email_addy": sentinel.email_addy,
     "password": sentinel.password,
     "nodes_file": sentinel.nodes_file,
     "send_on_success": False
 })())
-@patch("generalised_functions.ChecksInterface", autospec=True)
+@patch("generalised_functions.CheckResult", spec=CheckResult)
 @patch("generalised_functions.email_wout_further_checks", autospec=True)
 @patch("generalised_functions.IInterrogator", autospec=True)
 @patch("generalised_functions.ResultHolder", autospec=True)
@@ -347,18 +349,19 @@ def test_process_args_then_send(
        return_value=create_autospec(ErrorHandler()))
 def test_process_args_and_email(
         mock_iterate_rmt_servers, mock_result_holder, mock_interrog,
-        mock_email_wout_further_checks, mock_ci, mock_parse_args):
-    mock_ci.get_unit_name.return_value = sentinel.unit
-    process_args(sentinel.args_list, mock_ci, Mock(IInterrogator))
+        mock_email_wout_further_checks, mock_c_res, mock_parse_args):
+    mock_c_res.get_unit_name.return_value = sentinel.unit
+    process_args(sentinel.args_list, mock_c_res, sentinel.iinterrogator)
     mock_parse_args.assert_called_once_with(sentinel.args_list, sentinel.unit)
     mock_result_holder.assert_not_called()
     mock_iterate_rmt_servers.assert_not_called()
     mock_interrog.assert_not_called()
     mock_email_wout_further_checks.assert_called_once_with(
-        sentinel.email_to, sentinel.email_addy, sentinel.password, mock_ci)
+        sentinel.email_to, sentinel.email_addy, sentinel.password, mock_c_res)
 
 
-@patch("generalised_functions.get_public_ip", autospec=True, return_value=sentinel.pub_ip)
+@patch("generalised_functions.get_public_ip", autospec=True,
+       return_value=sentinel.pub_ip)
 def test_monitor_runners_ipv4(mocked_get_public_ip):
     with patch("builtins.open",
                mock_open(read_data="8.8.8.8\n")) as mocked_open:
@@ -374,12 +377,12 @@ def test_monitor_runners_ipv4(mocked_get_public_ip):
 @patch("generalised_functions.monitor_runners_ipv4", autospec=True)
 @patch("generalised_functions.IInterrogator", autospec=True)
 @patch("generalised_functions.ResultHolder", autospec=True)
-@patch("generalised_functions.ChecksInterface", autospec=True)
+@patch("generalised_functions.CheckResult", spec=CheckResult)
 @patch("builtins.open", autospec=True)
 @patch("generalised_functions.get_ping_latencies", autospec=True)
 @patch("generalised_functions.json.load", autospec=True)
 def test_iterate_rmt_servers_good_pings(
-        mock_json_load, mock_get_pings, mocked_open, mock_ci,
+        mock_json_load, mock_get_pings, mocked_open, mock_c_res,
         mock_result_holder, mock_interrog, mock_ipv4_monitor):
     iterable_latencies = ["21.43", "24.21", "27.87"]
     mock_get_pings.return_value = iterable_latencies
@@ -391,7 +394,7 @@ def test_iterate_rmt_servers_good_pings(
     }
     mock_json_load.return_value = mock_rmt_pc
     err_handler = iterate_rmt_servers(
-        sentinel.file_name, mock_ci, mock_interrog, mock_result_holder)
+        sentinel.file_name, mock_c_res, mock_interrog, mock_result_holder)
     assert err_handler.msg["To"] == mock_rmt_pc["email_dest"]
     mock_interrog.assert_called_once_with(
         err_handler, mock_rmt_pc["servers"][0],

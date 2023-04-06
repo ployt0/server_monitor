@@ -2,13 +2,13 @@
 
 ![python-app workflow](https://github.com/ployt0/server_monitor/actions/workflows/python-app.yml/badge.svg)
 
-This repo helps to monitor a remote server by first checking its ping. It then attempts to SSH in and run further tests. The results are recorded in the "results" subdirectory for each month and node type.
+This repo helps to monitor a remote server by first checking its ping. It then attempts to SSH in and run further tests. The results are recorded in the "results" subdirectory for each month.
 
 Nodes attempt HTTP(S) requests and record the return code and latency. This may be an assumption too far.
 
-HTTP endpoint checks can be disabled by inheriting and overriding. [`ChecksInterface`](checks_interface.py) is the common interface and [server_mon.py](server_mon.py) implements this as `CheckResult`, along with other, role-specific, functionality.
+HTTP endpoint checks can be disabled by inheriting and overriding. [`CheckResult`](check_result.py) is the common interface.
 
-The starting point for this project was [server_pinger.py](server_pinger.py). It simply pings and records latency on the control node.
+Before server_monitor there was [server_pinger.py](server_pinger.py). It simply pings and records latency on the control node.
 
 ## Initiation
 

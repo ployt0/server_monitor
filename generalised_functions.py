@@ -12,7 +12,7 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Callable, Union
 
-from checks_interface import ChecksInterface
+from check_result import CheckResult
 from html_tabulating import tabulate_csv_as_html
 from ping_functions import get_ping_latencies
 
@@ -22,11 +22,6 @@ PUBLIC_IP = "where we test from. Can be read from json config."
 RESULTS_DIR = "results"
 DATE_MON_FMT = "%y%m"
 DAY_TIME_FMT = "%d %H:%M:%S"
-
-
-def format_ipv4(ipv4: str):
-    """Aligns the octets on the trailing dot."""
-    return ".".join(["{:>3}".format(x) for x in ipv4.split(".")])
 
 
 def send_email(msg: EmailMessage, email_from_addy: str, password: str):
@@ -192,11 +187,11 @@ class ResultHolder:
     """
 
     def __init__(self):
-        self.results: List[ChecksInterface] = []
+        self.results: List[CheckResult] = []
         # Ideally all net operations should be done from a thread pool at once:
         self.time = datetime.utcnow()
 
-    def append(self, result: ChecksInterface):
+    def append(self, result: CheckResult):
         self.results.append(result)
 
     def save(self, unit_name: str):
@@ -248,7 +243,7 @@ def parse_args_for_monitoring(
 
     :param args_list: command line arguments
     :param unit_name: so far we have "node" and "miner", describing what the
-    role of the monitored.
+        role of the monitored.
     :return:
     """
     parser = argparse.ArgumentParser(
@@ -324,7 +319,7 @@ def load_results(
 
 def email_wout_further_checks(
         email_to: str, sender_addy: str, sender_pw: str,
-        check_result: ChecksInterface):
+        check_result: CheckResult):
     yymm = datetime.utcnow().strftime(DATE_MON_FMT)
     results = load_results(
         yymm, check_result.result_from_csv, check_result.get_unit_name())
@@ -340,7 +335,7 @@ IInterrogator = Callable[
 
 def process_args(
         args_list: List[str],
-        check_result: ChecksInterface,
+        check_result: CheckResult,
         interrog_routine: IInterrogator):
     """
     Parses and processes command line arguments for monitoring scripts.
@@ -370,7 +365,7 @@ def process_args(
 
 
 def iterate_rmt_servers(
-        nodes_file_name: str, check_result: ChecksInterface,
+        nodes_file_name: str, check_result: CheckResult,
         interrog_routine: IInterrogator, result_holder: ResultHolder)\
         -> ErrorHandler:
     """
