@@ -271,10 +271,10 @@ nodes_file is a list of servers with these fields:
           "key_filename": "/home/megs/.ssh/id_rsa"
         }
       ],
-      "verify": "Path to public key or cert. True or False to enable/disable.",
-      "home_page": "For node monitoring this is the origin or other URL to be requested.",
-      "ssh_peers": "IPv4s of known, permitted ssh clients, separated by commas.",
-      "known_ports": "known or permitted listening ports, separated by commas."
+      "verify": "Optional path to public key or cert. True (default) or False to enable/disable.",
+      "home_page": "Used for HTTP(S) request, as health check / heartbeat. eg 'https://example.com'",
+      "ssh_peers": "IPv4 addresses of known, permitted ssh clients, separated by commas.",
+      "known_ports": "known, permitted listening ports, separated by commas."
     }
   ],
   "email_dest": "email address to send notifications to."
