@@ -420,5 +420,18 @@ def test_get_public_ip(mock_requests_get):
     assert pub_ip == test_ip
 
 
+#todo on a fresh install "results" isn't a directory and looking for public ip history there would break it.
 
+'''
+python3[8103]:   File "/home/leon/server_monitor/generalised_functions.py", line 354, in process_args
+python3[8103]:     err_handler = iterate_rmt_servers(args.nodes_file, check_result,
+python3[8103]:   File "/home/leon/server_monitor/generalised_functions.py", line 391, in iterate_rmt_servers
+python3[8103]:     monitor_runners_ipv4()
+python3[8103]:   File "/home/leon/server_monitor/generalised_functions.py", line 70, in monitor_runners_ipv4
+python3[8103]:     with open(f"{RESULTS_DIR}/public_ip_history.txt", "a+") as f:
+python3[8103]: FileNotFoundError: [Errno 2] No such file or directory: 'results/public_ip_history.txt'
+systemd[1]: rmt-monitor.service: Main process exited, code=exited, status=1/FAILURE
+systemd[1]: rmt-monitor.service: Failed with result 'exit-code'.
+systemd[1]: rmt-monitor.service: Consumed 1.799s CPU time.
+'''
 

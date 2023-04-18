@@ -60,6 +60,7 @@ def monitor_runners_ipv4():
     """Keep a record of what IP we're on which might be useful in
     whitelisting blocks for our future access to these servers."""
     runners_ip = get_public_ip()
+    Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
     try:
         with open(f"{RESULTS_DIR}/public_ip_history.txt") as f:
             lines = f.read().splitlines()
