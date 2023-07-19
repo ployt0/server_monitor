@@ -80,7 +80,7 @@ jobs:
     - name: Run nginx container
       run: |
         docker run -tid --name nodeundertest host2test
-        sleep 3
+        sleep 9
         docker cp nodeundertest:/etc/ssl/certs/nginx-selfsigned.crt .
         echo "=========PRINTING CERT==========="
         cat nginx-selfsigned.crt
