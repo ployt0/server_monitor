@@ -94,7 +94,9 @@ jobs:
         cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
         sed -iE "s/172.17.0.2/$cont_ip/g" tests/sample_config.json
         sed -iE "s|\"home_page\": .*|\"home_page\": \"http://$cont_ip/\"|" tests/sample_config.json
+        echo "beginning python test"
         ./server_mon.py -n tests/sample_config.json email_agent_addy@gmail.com email_agent_password
+        echo "finished python test"
         tail -n1 results/node_*.csv
         http_code=$(tail -n1 results/node_*.csv | cut -d "," -f 6)
         if [ $http_code != "200" ]; then
@@ -120,7 +122,13 @@ jobs:
         cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
         sed -iE '/"ip":/a\        "verify": "nginx-selfsigned.crt",' tests/sample_config.json
         sed -iE "s|\"home_page\": .*\"|\"home_page\": \"http://$cont_ip/provisioned.html\"|" tests/sample_config.json
+        echo "=========PRINTING CONF==========="
+        cat tests/sample_config.json
+        echo "==========PRINTED CONF==========="
         docker cp nodeundertest:/etc/ssl/certs/nginx-selfsigned.crt .
+        echo "=========PRINTING CERT==========="
+        cat nginx-selfsigned.crt
+        echo "==========PRINTED CERT==========="
         ./server_mon.py -n tests/sample_config.json email_agent_addy@gmail.com email_agent_password
         tail -n1 results/node_*.csv
         http_code=$(tail -n1 results/node_*.csv | cut -d "," -f 6)
