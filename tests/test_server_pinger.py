@@ -2,7 +2,7 @@ import datetime
 import subprocess
 from unittest.mock import patch, sentinel, Mock, mock_open, call
 
-from generalised_functions import RESULTS_DIR
+from indie_gen_funcs import RESULTS_DIR
 from server_pinger import time_pings, ping_all_day, PingResult, save_days_pings
 
 PING_OUTPUT = \

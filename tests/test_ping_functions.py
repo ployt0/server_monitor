@@ -1,7 +1,7 @@
 import subprocess
 from unittest.mock import Mock, patch, sentinel
 
-from generalised_functions import ErrorHandler
+from indie_gen_funcs import ErrorHandler
 from ping_functions import ping, get_ping_latencies
 
 STDOUT_WINDOWS_ONLINE = \

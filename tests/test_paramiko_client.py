@@ -7,13 +7,13 @@ from paramiko.client import SSHClient
 from paramiko.pkey import PKey
 from paramiko.ssh_exception import AuthenticationException, BadHostKeyException
 
-import generalised_functions
+import indie_gen_funcs
 from paramiko_client import SSHInterrogator, MinerInterrogator
 
 SENTINEL_ERROR = RuntimeError("test injected")
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_parse_user_csv(mock_error_handler):
     interrogator = SSHInterrogator(mock_error_handler)
     assert interrogator.parse_user_csv("forty,five") == {"forty", "five"}
@@ -38,7 +38,7 @@ def mk_interrogator(mock_error_handler, mock_lines, side_effect=None):
     return interrogator
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_ports_unknown(mock_error_handler, ss_lines_1):
     interrogator = mk_interrogator(mock_error_handler, ss_lines_1)
     interrogator.query_ports(set())
@@ -46,7 +46,7 @@ def test_query_ports_unknown(mock_error_handler, ss_lines_1):
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_ports_known(mock_error_handler, ss_lines_1):
     interrogator = mk_interrogator(mock_error_handler, ss_lines_1)
     interrogator.query_ports({"22"})
@@ -54,14 +54,14 @@ def test_query_ports_known(mock_error_handler, ss_lines_1):
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_ports_fail(mock_error_handler, ss_lines_1):
     interrogator = mk_interrogator(mock_error_handler, ss_lines_1, SENTINEL_ERROR)
     interrogator.query_ports({"22"})
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHInterrogator.initialise_connection", return_value=None)
 @patch("paramiko_client.SSHInterrogator.remote_tentative_calls")
 def test_do_queries(mock_remote_tentative_calls, mock_initialise_connection, mock_error_handler, mock_rmt_pc_1):
@@ -71,7 +71,7 @@ def test_do_queries(mock_remote_tentative_calls, mock_initialise_connection, moc
     mock_remote_tentative_calls.assert_called_once_with(mock_rmt_pc_1)
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHInterrogator.initialise_connection", return_value=None)
 @patch("paramiko_client.SSHInterrogator.remote_tentative_calls", side_effect=SENTINEL_ERROR)
 def test_do_queries_throwing(mock_remote_tentative_calls, mock_initialise_connection, mock_error_handler, mock_rmt_pc_1):
@@ -82,7 +82,7 @@ def test_do_queries_throwing(mock_remote_tentative_calls, mock_initialise_connec
     mock_remote_tentative_calls.assert_called_once_with(mock_rmt_pc_1)
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHClient", autospec=True)
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
 def test_initialise_connection(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_1):
@@ -98,7 +98,7 @@ def test_initialise_connection(mock_autoaddpolicy, mock_ssh_client, mock_error_h
     mock_ssh_client.assert_called_once_with()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHClient", autospec=True)
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
 def test_initialise_connection_alt_auth_method(mock_autoaddpolicy, mock_ssh_client, mock_error_handler, mock_rmt_pc_2):
@@ -122,7 +122,7 @@ def test_initialise_connection_alt_auth_method(mock_autoaddpolicy, mock_ssh_clie
     mock_ssh_client.assert_called_once_with()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHClient", autospec=True)
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
 def test_initialise_connection_auth_exception(
@@ -143,7 +143,7 @@ def test_initialise_connection_auth_exception(
     mock_ssh_client.assert_called_once_with()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHClient", autospec=True)
 @patch("paramiko_client.paramiko.AutoAddPolicy", autospec=True)
 def test_initialise_connection_bad_key_exception(
@@ -175,7 +175,7 @@ def test_initialise_connection_bad_key_exception(
     mock_ssh_client.assert_called_once_with()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_free(mock_error_handler, free_lines_1):
     interrogator = mk_interrogator(mock_error_handler, free_lines_1)
     interrogator.query_free()
@@ -185,14 +185,14 @@ def test_query_free(mock_error_handler, free_lines_1):
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_free_fail(mock_error_handler, free_lines_1):
     interrogator = mk_interrogator(mock_error_handler, free_lines_1, SENTINEL_ERROR)
     interrogator.query_free()
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_ssh_peers(mock_error_handler, sport22_lines):
     interrogator = mk_interrogator(mock_error_handler, sport22_lines)
     interrogator.query_ssh_peers(set())
@@ -201,14 +201,14 @@ def test_query_ssh_peers(mock_error_handler, sport22_lines):
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_ssh_peers_fail(mock_error_handler, sport22_lines):
     interrogator = mk_interrogator(mock_error_handler, sport22_lines, SENTINEL_ERROR)
     interrogator.query_ssh_peers(set())
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_boot_time(mock_error_handler):
     interrogator = mk_interrogator(mock_error_handler, ["         system boot  2021-10-01 08:55", ""])
     interrogator.query_boot_time()
@@ -217,14 +217,14 @@ def test_query_boot_time(mock_error_handler):
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_boot_time_fail(mock_error_handler):
     interrogator = mk_interrogator(mock_error_handler, ["         system boot  2021-10-01 08:55", ""], SENTINEL_ERROR)
     interrogator.query_boot_time()
     mock_error_handler.append.assert_called_once_with(SENTINEL_ERROR)
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_disk_free(mock_error_handler):
     interrogator = mk_interrogator(mock_error_handler, ["Avail", "124G"])
     interrogator.query_disk_free()
@@ -233,7 +233,7 @@ def test_query_disk_free(mock_error_handler):
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 def test_query_disk_free_fail(mock_error_handler):
     interrogator = mk_interrogator(mock_error_handler, ["Avail", "124G"], SENTINEL_ERROR)
     interrogator.query_disk_free()
@@ -256,7 +256,7 @@ def test_remote_tentative_calls():
         call(mock_rmt_pc.get("known_ports", "")),
     ])
     fake_instance.query_ssh_peers.assert_called_once_with(
-        {generalised_functions.PUBLIC_IP, "NOO.YOO.GET.LOS"})
+        {indie_gen_funcs.PUBLIC_IP, "NOO.YOO.GET.LOS"})
     fake_instance.query_ports.assert_called_once_with(
         SSHInterrogator.parse_user_csv(mock_rmt_pc["known_ports"]))
 
@@ -273,7 +273,7 @@ def test_read_gpu():
     assert gpu is None
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.MinerInterrogator.read_gpu", autospec=True, side_effect=[0, 1, 2, None])
 def test_query_gpus(mock_read_gpu, mock_error_handler, nvidia_smi_lines_1):
     interrogator = MinerInterrogator(mock_error_handler)
@@ -289,7 +289,7 @@ def test_query_gpus(mock_read_gpu, mock_error_handler, nvidia_smi_lines_1):
          call('                                                                               \n')])
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHInterrogator.initialise_connection", return_value=None)
 @patch("paramiko_client.MinerInterrogator.query_gpus")
 @patch("paramiko_client.SSHInterrogator.remote_tentative_calls")
@@ -305,7 +305,7 @@ def test_miner_do_queries(
     mock_error_handler.append.assert_not_called()
 
 
-@patch("server_mon.ErrorHandler", autospec=True)
+@patch("paramiko_client.ErrorHandler", autospec=True)
 @patch("paramiko_client.SSHInterrogator.initialise_connection", side_effect=SENTINEL_ERROR)
 def test_miner_do_queries_fail(mock_initialise_connection, mock_error_handler, mock_rmt_pc_1):
     interrogator = MinerInterrogator(mock_error_handler)
