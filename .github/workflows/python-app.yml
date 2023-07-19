@@ -80,11 +80,6 @@ jobs:
     - name: Run nginx container
       run: |
         docker run -tid --name nodeundertest host2test
-        sleep 9
-        docker cp nodeundertest:/etc/ssl/certs/nginx-selfsigned.crt .
-        echo "=========PRINTING CERT==========="
-        cat nginx-selfsigned.crt
-        echo "==========PRINTED CERT==========="
 
     - name: Stub out send_email function
       run: |
