@@ -83,11 +83,11 @@ jobs:
 
     - name: Stub out send_email function
       run: |
-        sed -i "/def send_email(msg: EmailMessage, email_from_addy: str, password: str)/,/smtp.quit()/cdef send_email(msg: EmailMessage, email_from_addy: str, password: str): raise RuntimeError(msg)" generalised_functions.py
+        sed -i "/def send_email(msg: EmailMessage, email_from_addy: str, password: str)/,/smtp.quit()/cdef send_email(msg: EmailMessage, email_from_addy: str, password: str): raise RuntimeError(msg)" indie_gen_funcs.py
 
     - name: Check send_email function stubbed
       run: |
-        cat generalised_functions.py | grep -A10 "def send_email"
+        cat indie_gen_funcs.py | grep -A10 "def send_email"
 
     - name: Test probing nginx HTTP
       run: |
