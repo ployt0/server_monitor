@@ -1,4 +1,4 @@
-FROM debian:bullseye-20221004-slim
+FROM debian:bookworm-20230703-slim
 
 ENV newusername=testrunner
 

@@ -18,7 +18,6 @@ def interrog_routine(err_handler: ErrorHandler, rmt_pc: dict,
     try:
         resp = requests.get(rmt_pc["home_page"], timeout=5, verify=rmt_pc.get("verify", True))
     except SSLError as ssl_e:
-        print("We are good, right?")
         err_handler.append(ssl_e)
         resp = requests.get(rmt_pc["home_page"], timeout=5, verify=False)
     except requests.exceptions.ConnectionError as awol_e:

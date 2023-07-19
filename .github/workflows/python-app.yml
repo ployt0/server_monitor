@@ -31,7 +31,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest coverage
+        pip install flake8 pytest coverage ansible
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Lint with flake8
@@ -93,6 +93,7 @@ jobs:
       run: |
         cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
         sed -iE "s/172.17.0.2/$cont_ip/g" tests/sample_config.json
+        # Prior to our provisioning, the container defaults to serving '/'
         sed -iE "s|\"home_page\": .*|\"home_page\": \"http://$cont_ip/\"|" tests/sample_config.json
         echo "beginning python test"
         ./server_mon.py -n tests/sample_config.json email_agent_addy@gmail.com email_agent_password
@@ -105,7 +106,7 @@ jobs:
 
 
 
-    - name: Provision nginx container
+    - name: Provision nginx container to use TLS
       run: |
         cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
         cd pb_provisioner
@@ -122,13 +123,8 @@ jobs:
         cont_ip=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nodeundertest)
         sed -iE '/"ip":/a\        "verify": "nginx-selfsigned.crt",' tests/sample_config.json
         sed -iE "s|\"home_page\": .*\"|\"home_page\": \"http://$cont_ip/provisioned.html\"|" tests/sample_config.json
-        echo "=========PRINTING CONF==========="
-        cat tests/sample_config.json
-        echo "==========PRINTED CONF==========="
         docker cp nodeundertest:/etc/ssl/certs/nginx-selfsigned.crt .
-        echo "=========PRINTING CERT==========="
-        cat nginx-selfsigned.crt
-        echo "==========PRINTED CERT==========="
+        openssl x509 -text -noout -in nginx-selfsigned.crt
         ./server_mon.py -n tests/sample_config.json email_agent_addy@gmail.com email_agent_password
         tail -n1 results/node_*.csv
         http_code=$(tail -n1 results/node_*.csv | cut -d "," -f 6)

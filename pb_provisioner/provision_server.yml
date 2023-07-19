@@ -45,6 +45,7 @@
           cmd: >
             openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1
             -days 365 -nodes -x509 -subj "/CN={{ domain_name }}"
+            -addext "subjectAltName = IP:{{ domain_name }}"
             -keyout "{{ tls_cert_key }}" -out "{{ tls_cert_file }}"
 
 
