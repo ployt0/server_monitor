@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-from generalised_functions import RESULTS_DIR
+from indie_gen_funcs import RESULTS_DIR
 from check_result import format_ipv4
 from ping_functions import ping
 
