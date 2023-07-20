@@ -2,16 +2,14 @@ import argparse
 import datetime
 from email.message import EmailMessage
 from typing import List
-from unittest.mock import Mock, patch, call, sentinel, mock_open, create_autospec
+from unittest.mock import Mock, patch, call, sentinel, mock_open, create_autospec, MagicMock
 
 import pytest
 
 from check_result import format_ipv4
-from generalised_functions import send_email, monitor_runners_ipv4, \
+from indie_gen_funcs import send_email, monitor_runners_ipv4, \
     compose_email, parse_args_for_monitoring, CheckResult, \
-    email_wout_further_checks, \
-    ResultHolder, process_args, \
-    iterate_rmt_servers
+    email_wout_further_checks, ResultHolder
 from indie_gen_funcs import ErrorHandler, find_cells_under, \
     convert_date_to_human_readable, load_results, RESULTS_DIR, get_public_ip, plural
 import indie_gen_funcs
@@ -279,7 +277,7 @@ def test_result_holder_saves():
 
 @patch("indie_gen_funcs.get_public_ip", autospec=True,
        return_value="sentinel.pub_ip")
-def test_monitor_runners_ipv4(mocked_get_public_ip):
+def test_monitor_runners_changed_ipv4(mocked_get_public_ip):
     with patch("builtins.open",
                mock_open(read_data="8.8.8.8\n")) as mocked_open:
         monitor_runners_ipv4()
@@ -288,6 +286,36 @@ def test_monitor_runners_ipv4(mocked_get_public_ip):
             call(f"{RESULTS_DIR}/public_ip_history.txt", "a+")
         ], any_order=True)
         mocked_open.return_value.write.assert_called_once_with("sentinel.pub_ip\n")
+    mocked_get_public_ip.assert_called_once_with()
+
+
+@patch("indie_gen_funcs.get_public_ip", autospec=True,
+       return_value="8.8.8.8")
+def test_monitor_runners_unchanged_ipv4(mocked_get_public_ip):
+    with patch("builtins.open",
+               mock_open(read_data="8.8.8.8\n")) as mocked_open:
+        monitor_runners_ipv4()
+        mocked_open.assert_called_once_with(
+            f"{RESULTS_DIR}/public_ip_history.txt")
+        mocked_open.return_value.write.assert_not_called()
+    mocked_get_public_ip.assert_called_once_with()
+
+
+@patch("indie_gen_funcs.get_public_ip", autospec=True,
+       return_value="sentinel.pub_ip")
+def test_monitor_runners_first_ipv4(mocked_get_public_ip):
+    open_mock = MagicMock()  # mock for open
+    file_mock = MagicMock()  # mock for file returned from open
+    open_mock.return_value.__enter__.side_effect = [
+        FileNotFoundError, file_mock
+    ]
+    with patch("builtins.open", open_mock) as mocked_open:
+        monitor_runners_ipv4()
+        mocked_open.assert_has_calls([
+            call(f"{RESULTS_DIR}/public_ip_history.txt"),
+            call(f"{RESULTS_DIR}/public_ip_history.txt", "a+")
+        ], any_order=True)
+        file_mock.write.assert_called_once_with("sentinel.pub_ip\n")
     mocked_get_public_ip.assert_called_once_with()
 
 
@@ -305,20 +333,3 @@ def test_get_public_ip(mock_requests_get):
     }
     pub_ip = get_public_ip()
     assert pub_ip == test_ip
-
-
-#todo on a fresh install "results" isn't a directory and looking for public ip history there would break it.
-
-'''
-python3[8103]:   File "/home/leon/server_monitor/generalised_functions.py", line 354, in process_args
-python3[8103]:     err_handler = iterate_rmt_servers(args.nodes_file, check_result,
-python3[8103]:   File "/home/leon/server_monitor/generalised_functions.py", line 391, in iterate_rmt_servers
-python3[8103]:     monitor_runners_ipv4()
-python3[8103]:   File "/home/leon/server_monitor/generalised_functions.py", line 70, in monitor_runners_ipv4
-python3[8103]:     with open(f"{RESULTS_DIR}/public_ip_history.txt", "a+") as f:
-python3[8103]: FileNotFoundError: [Errno 2] No such file or directory: 'results/public_ip_history.txt'
-systemd[1]: rmt-monitor.service: Main process exited, code=exited, status=1/FAILURE
-systemd[1]: rmt-monitor.service: Failed with result 'exit-code'.
-systemd[1]: rmt-monitor.service: Consumed 1.799s CPU time.
-'''
-
