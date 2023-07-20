@@ -73,7 +73,7 @@ def monitor_runners_ipv4():
         last_ip = ""
     if last_ip != runners_ip:
         with open(f"{RESULTS_DIR}/public_ip_history.txt", "a+") as f:
-            f.write(runners_ip)
+            f.write(runners_ip + "\n")
     global PUBLIC_IP
     PUBLIC_IP = runners_ip
 

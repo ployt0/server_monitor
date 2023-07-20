@@ -278,7 +278,7 @@ def test_result_holder_saves():
 
 
 @patch("indie_gen_funcs.get_public_ip", autospec=True,
-       return_value=sentinel.pub_ip)
+       return_value="sentinel.pub_ip")
 def test_monitor_runners_ipv4(mocked_get_public_ip):
     with patch("builtins.open",
                mock_open(read_data="8.8.8.8\n")) as mocked_open:
@@ -287,7 +287,7 @@ def test_monitor_runners_ipv4(mocked_get_public_ip):
             call(f"{RESULTS_DIR}/public_ip_history.txt"),
             call(f"{RESULTS_DIR}/public_ip_history.txt", "a+")
         ], any_order=True)
-        mocked_open.return_value.write.assert_called_once_with(sentinel.pub_ip)
+        mocked_open.return_value.write.assert_called_once_with("sentinel.pub_ip\n")
     mocked_get_public_ip.assert_called_once_with()
 
 
