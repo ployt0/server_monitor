@@ -2,19 +2,17 @@
 
 ![python-app workflow](https://github.com/ployt0/server_monitor/actions/workflows/python-app.yml/badge.svg)
 
-This repo helps to monitor a remote server by first checking its ping. It then attempts to SSH in and run further tests. The results are recorded in the "results" subdirectory for each month.
+This repo helps to monitor a remote server. First check is ping. It then attempts to SSH in and run further tests. The results are recorded in the "results" subdirectory, for each month.
 
-Nodes attempt HTTP(S) requests and record the return code and latency. This may be an assumption too far.
+Nodes attempt HTTP(S) requests and record the return code and latency.
 
-HTTP endpoint checks can be disabled by inheriting and overriding. [`CheckResult`](check_result.py) is the common interface.
-
-Before server_monitor there was [server_pinger.py](server_pinger.py). It simply pings and records latency on the control node.
+Before server_monitor there was [server_pinger.py](server_pinger.py). It simply pings and records latency.
 
 ## Initiation
 
-This script functions as a monitoring daemon. On a raspberry pi for example. We call this the control node, or control machine. Please ensure that this server has connected to each of the monitored nodes at least once since their provisioning.
+This script functions as a monitoring daemon, from a raspberry pi for example. We call this the control node, or control machine.
 
-Reinstalling a node changes its signature. SSH defaults to suspecting someone is impersonating the endpoint.
+Please ensure that the control node has connected to each of the monitored nodes since their latest provisioning. Reprovisioning a node changes its signature. SSH defaults to suspecting someone is impersonating the endpoint.
 
 You would ok something like this:
 
@@ -27,28 +25,25 @@ Warning: Permanently added '21.151.211.10' (ECDSA) to the list of known hosts.
 megamind@21.151.211.10: Permission denied (publickey).
 ```
 
-Neglecting this will not cause an email notification to be sent. That would be annoying. Instead, observer the lack of new records (the count is in the subject) in the regular emails.
+Neglecting this will not cause an email notification to be sent. That would be annoying. Instead, observe the lack of new records (the count is in the subject) in the regular emails.
 
 ## Installation
 
 This requires python 3.7 and above. I'll be moving to 3.9 and above asap.
 
-Install [requirements.txt](requirements.txt) in a venv on the control machine. None of the versions are pinned. I recently (23rd July 2022) discovered that my new server was no longer reachable by paramiko, despite ansible and regular SSH having no problems. The fix was to update the package in my venv:
+Install [requirements.txt](requirements.txt) in a venv on the control machine. None of the versions are pinned. This can cause problems, for which I have automated tests to run weekly.
 
-```shell
-pip install --upgrade paramiko
-```
+I recently (23rd July 2022) discovered that my new server was no longer reachable by paramiko, despite ansible and regular SSH having no problems. The fix was to update the package in my local venv.
 
 Create a working, source, directory; eg, `mkdir ~/monitoring` on the control machine.
 
-Copy or clone the python files, including providing a `monitored_nodes.json` (outside of source control) . Set up systemd service and timer files. The timer file specifies the interval and is named identically to the service but with the ".timer" suffix replacing ".service". For example:
+Clone the python files, including providing a `monitored_nodes.json` (outside of source control) . Set up systemd service, and timer, files. `rmt-monitor.timer`, for example:
 
 ```
 [Unit]
 Description=Timer that periodically triggers rmt-monitor.service
 
 [Timer]
-# OnCalendar=hourly
 # OnCalendar=*:0/15 # okay, 15m
 # OnCalendar=*-*-* *:00:00 # okay, hourly 
 # OnCalendar=*-*-* 0/2:00:00 # okay, every 2 hours
@@ -59,7 +54,7 @@ RandomizedDelaySec=2400
 WantedBy=timers.target
 ```
 
-After changing the interval (less is better, for testing), do `systemctl daemon-reload`. After a pause this returns. Any parsing errors will appear in `systemctl status rmt-monitor.timer`. We can check the schedule with `systemctl list-timers`. Timers aren't scheduled *whilst* still running. Timers get their next time slot after the matching service finishes.
+After changing the interval (less is better, for testing), do `systemctl daemon-reload`. After a pause, this returns. Any parsing errors will appear in `systemctl status rmt-monitor.timer`. We can check the schedule with `systemctl list-timers`. Timers aren't scheduled *whilst* still running. Timers get their next time slot after the matching service finishes.
 
 The unit file (*lookout!* password needed storing somewhere!):
 
@@ -80,13 +75,11 @@ Don't place these under the user's home directory: `~/.config/systemd/user/rmt-m
 
 Instead, use `/etc/systemd/system/rmt-monitor.service`. `/etc/systemd/system/` is described as, "System units created by the administrator", here: <https://www.freedesktop.org/software/systemd/man/systemd.unit.html>.
 
-<https://askubuntu.com/a/859583> describes how "lingering" users don't cancel the timer. The consensus is to use `/etc/systemd/system/`.
-
 `User=ployt0` underneath the `[Service]` section enables that `ployt0` user to retain ownership of the files and content residing in their home path.
 
 Use `sudo` to copy the unit files from your home directory to `/etc/systemd/system`. This preserves unprivileged ownership. Systemd is fine with this.
 
-In addition to running `systemctl daemon-reload` whenever advised in the output of another `systemctl` command, I can debug services (and timers) using:
+In addition to running `systemctl daemon-reload` whenever advised in the output of another `systemctl` command, I can debug services (and timers) using any combination of:
 
 ```shell
 systemctl start rmt-monitor
@@ -148,9 +141,9 @@ The nodes/inventory json file contains a list of machines identified by "servers
 
 `ip`, and `creds` are required for SSH. `creds` contains `username` and either `password` or `key_filename`. `creds` are passed directly to `SSHClient.connect`. If one identity in the list fails (perhaps because the target needs to stop accepting passwords and use keys instead) the next will be tried.
 
-`home_page` gives the exact URL to be queried requested by the `requests` library. Increasingly this will be https, and may include subdomains or paths.
-
 The following are optional:
+
+- `home_page` gives the exact URL to be queried requested by the `requests` library. Increasingly this will be https, and may include subdomains or paths.
 
 - `ssh_peers` allows a comma separated list of those IPs we can disregard when examining SSH sessions.
 
