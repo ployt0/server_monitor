@@ -1,6 +1,6 @@
 # Server Monitor
 
-![python-app workflow](https://github.com/ployt0/server_monitor/actions/workflows/python-app.yml/badge.svg)
+![python-app workflow](https://github.com/ployt0/server_monitor/actions/workflows/python-app.yml/badge.svg) [![codecov](https://codecov.io/gh/ployt0/server_monitor/branch/master/graph/badge.svg?token=XI7AQTB5NZ)](https://codecov.io/gh/ployt0/server_monitor)
 
 This repo helps to monitor a remote server. First check is ping. It then attempts to SSH in and run further tests. The results are recorded in the "results" subdirectory, for each month.
 
