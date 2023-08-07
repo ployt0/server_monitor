@@ -52,6 +52,10 @@ jobs:
         coverage report -m --fail-under=90
         coverage json
 
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Checksum build directory
       id: build-checksum
@@ -135,8 +139,3 @@ jobs:
           exit 1
         fi
 
-
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v3
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
