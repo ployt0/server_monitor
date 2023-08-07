@@ -50,6 +50,7 @@ jobs:
     - name: Test coverage
       run: |
         coverage report -m --fail-under=90
+        coverage json
 
 
     - name: Checksum build directory
