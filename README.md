@@ -1,6 +1,6 @@
 # Server Monitor
 
-![python-app workflow](https://github.com/ployt0/server_monitor/actions/workflows/python-app.yml/badge.svg) [![codecov](https://codecov.io/gh/ployt0/server_monitor/branch/master/graph/badge.svg?token=XI7AQTB5NZ)](https://codecov.io/gh/ployt0/server_monitor)
+![python-app workflow](https://github.com/ployt0/server_monitor/actions/workflows/python-app.yml/badge.svg) [![codecov](https://codecov.io/gh/ployt0/server_monitor/branch/master/graph/badge.svg?token=XI7AQTB5NZ)](https://codecov.io/gh/ployt0/server_monitor) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fployt0%2Fserver_monitor.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fployt0%2Fserver_monitor?ref=badge_shield)
 
 This repo helps to monitor a remote server. First check is ping. It then attempts to SSH in and run further tests. The results are recorded in the "results" subdirectory, for each month.
 
