@@ -17,16 +17,16 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -53,18 +53,18 @@ jobs:
         coverage json
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Checksum build directory
       id: build-checksum
       run: |
-        echo "::set-output name=checksum::$(find build_directory -type f -exec md5sum {} \; | sort | md5sum)"
+        echo "checksum=$(find build_directory -type f -exec md5sum {} \; | sort | md5sum)" >> $GITHUB_OUTPUT
 
     - name: Cache image
       id: cache-image
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           build_directory/host2test_latest.tar.gz
